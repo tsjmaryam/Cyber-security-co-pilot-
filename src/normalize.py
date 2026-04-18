@@ -5,6 +5,7 @@ from collections.abc import Mapping
 from typing import Any
 
 import pandas as pd
+from pandas.api.types import is_object_dtype, is_string_dtype
 
 from .ingest import RawRecord
 
@@ -25,8 +26,8 @@ def normalize_records(records: list[RawRecord]) -> pd.DataFrame:
     if frame.empty:
         return frame
     frame["event_time"] = pd.to_datetime(frame["event_time"], errors="coerce", utc=True)
-    frame["event_time_epoch_ms"] = (
-        frame["event_time"].astype("int64").where(frame["event_time"].notna(), pd.NA) // 1_000_000
+    frame["event_time_epoch_ms"] = frame["event_time"].map(
+        lambda value: pd.NA if pd.isna(value) else int(value.timestamp() * 1000)
     ).astype("Int64")
     frame["session_creation_date"] = pd.to_datetime(frame["session_creation_date"], errors="coerce", utc=True)
     frame["ingest_ts_utc"] = pd.to_datetime(frame["ingest_ts_utc"], utc=True)
@@ -36,7 +37,7 @@ def normalize_records(records: list[RawRecord]) -> pd.DataFrame:
     frame["is_error"] = (~frame["success"]).astype("boolean")
     frame["resource_count"] = frame["resource_count"].astype("Int64")
     for column in frame.columns:
-        if frame[column].dtype == object:
+        if is_object_dtype(frame[column]) or is_string_dtype(frame[column]):
             frame[column] = frame[column].map(_normalize_string)
     for selected in SELECTED_FIELD_STATES:
         state_column = f"{selected}_presence_state"

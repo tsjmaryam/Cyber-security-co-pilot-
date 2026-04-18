@@ -14,8 +14,9 @@ from backend.main import app as backend_app
 from scripts import seed_demo_db
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEMO_INCIDENT_ID = "incident_000000001"
+APP_SCHEMA_PATH = PROJECT_ROOT / "src" / "db" / "schema.sql"
 
 
 def _resolve_dsn() -> str | None:
@@ -50,6 +51,7 @@ def test_live_backend_and_agent_routes_against_seeded_demo_db(monkeypatch):
 
     with psycopg.connect(dsn) as conn:
         with conn.cursor() as cur:
+            cur.execute(APP_SCHEMA_PATH.read_text(encoding="utf-8"))
             cur.execute("DELETE FROM decision_support_results WHERE policy_version LIKE 'test-policy-%'")
             cur.execute("DELETE FROM policy_snapshots WHERE policy_version LIKE 'test-policy-%'")
             cur.execute("DELETE FROM policy_snapshots WHERE policy_version = 'zzz-latest-policy'")
