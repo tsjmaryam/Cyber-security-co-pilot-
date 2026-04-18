@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from src.services.dtos import CoverageRecordDTO, DecisionSupportPayloadDTO, DetectorRecordDTO, EvidenceRecordDTO, IncidentRecordDTO
+
 
 class AgentRepositoryBundle(Protocol):
     def fetch_incident(self, incident_id: str) -> dict[str, Any] | None: ...
@@ -14,11 +16,11 @@ class AgentRepositoryBundle(Protocol):
 
 @dataclass
 class AgentContextBundle:
-    incident: dict[str, Any]
-    evidence_package: dict[str, Any] | None
-    detector_result: dict[str, Any] | None
-    coverage_assessment: dict[str, Any] | None
-    decision_support_result: dict[str, Any] | None
+    incident: IncidentRecordDTO
+    evidence_package: EvidenceRecordDTO | None
+    detector_result: DetectorRecordDTO | None
+    coverage_assessment: CoverageRecordDTO | None
+    decision_support_result: DecisionSupportPayloadDTO | None
 
 
 def load_agent_context(repositories: AgentRepositoryBundle, incident_id: str) -> AgentContextBundle:
@@ -26,9 +28,15 @@ def load_agent_context(repositories: AgentRepositoryBundle, incident_id: str) ->
     if incident is None:
         raise ValueError(f"Incident not found: {incident_id}")
     return AgentContextBundle(
-        incident=incident,
-        evidence_package=repositories.fetch_latest_evidence_package(incident_id),
-        detector_result=repositories.fetch_latest_detector_result(incident_id),
-        coverage_assessment=repositories.fetch_latest_coverage_assessment(incident_id),
-        decision_support_result=repositories.fetch_latest_decision_support_result(incident_id),
+        incident=IncidentRecordDTO.from_record(incident),
+        evidence_package=EvidenceRecordDTO.from_record(repositories.fetch_latest_evidence_package(incident_id)),
+        detector_result=_optional_dto(DetectorRecordDTO, repositories.fetch_latest_detector_result(incident_id)),
+        coverage_assessment=_optional_dto(CoverageRecordDTO, repositories.fetch_latest_coverage_assessment(incident_id)),
+        decision_support_result=DecisionSupportPayloadDTO.from_payload(repositories.fetch_latest_decision_support_result(incident_id)),
     )
+
+
+def _optional_dto(dto_cls, value):
+    if value is None:
+        return None
+    return dto_cls.from_record(value)

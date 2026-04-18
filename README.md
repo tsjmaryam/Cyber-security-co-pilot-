@@ -10,6 +10,18 @@ From the project root:
 python -m src.main --project-root .
 ```
 
+To generate the purpose-doc demo stream with synthetic CloudTrail batches for the blind-spot scenarios:
+
+```bash
+python -m src.demo_stream --output-dir data/demo_stream --batch-size 1
+```
+
+To run the current pipeline against the purpose-doc demo scenarios end to end:
+
+```bash
+python -m src.demo_runner --project-root . --output-dir data/demo_run --batch-size 1
+```
+
 To generate weak suspiciousness labels on incidents and train the baseline incident model:
 
 ```bash
@@ -103,6 +115,8 @@ Default config lives in `configs/pipeline_config.yaml` and behavioral flag rules
 - `src/normalize.py`: flattens CloudTrail records into a canonical event table
 - `src/derive_features.py`: adds ordering keys, convenience flags, missingness states, and rolling counts
 - `src/build_incidents.py`: groups ordered events into inactivity-bounded incidents
+- `src/demo_stream.py`: generates synthetic CloudTrail-style demo scenarios for incomplete, complete, and unavailable-context operator flows
+- `src/demo_runner.py`: runs the existing ingestion, normalization, feature, incident, weak-label, decision-support, and coverage-review flow over the demo scenarios
 - `src/validate.py`: builds schema metadata and validation summaries
 - `src/export.py`: writes parquet, CSV, and report artifacts
 - `src/weak_label.py`: assigns rule-based weak suspiciousness labels to incidents
@@ -111,9 +125,11 @@ Default config lives in `configs/pipeline_config.yaml` and behavioral flag rules
 - `src/decision_support_bridge.py`: converts scored incidents into decision-support inputs and calls the standalone service
 - `src/db/`: Postgres connection utilities and starter schema
 - `src/repositories/`: Postgres repository layer for incident context, evidence packages, detector outputs, policy snapshots, and saved decision-support results
+- `src/repositories/service_bundles.py`: narrow repository bundles for decision support, coverage review, operator workflow, and agent access
 - `src/services/decision_support_app_service.py`: application service that assembles DB records into the pure decision-support inputs
 - `src/services/coverage_review_service.py`: operator-facing blind-spot review service that assembles recommendation, alternatives, completeness, and double-check candidates
 - `src/services/operator_decision_service.py`: records operator approvals, alternative choices, escalations, and double-check requests with snapshots of what the user saw
+- `src/services/dtos.py`: typed service-layer DTOs used to reduce dict-shape coupling between services
 - `src/agent/`: model-agnostic ReAct agent module that grounds chat responses in Postgres-backed context and decision-support outputs
 - `src/services/agent_app_service.py`: application factory and convenience entrypoint for OpenAI-compatible incident queries
 - `decision_support/`: standalone package for deterministic non-expert decision guidance

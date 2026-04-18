@@ -7,7 +7,7 @@ from src.agent.auth import load_codex_access_token, should_use_codex_auth, valid
 from src.agent.openai_compat import OpenAICompatConfig
 from src.agent.service import DecisionSupportAgent
 from src.db.connection import create_connection, load_postgres_config
-from src.repositories.postgres_bundle import PostgresRepositoryBundle
+from src.repositories.service_bundles import AgentRepositoryBundle, DecisionSupportRepositoryBundle
 from src.services.decision_support_app_service import DecisionSupportAppService
 
 
@@ -51,8 +51,9 @@ def build_postgres_backed_agent(config: AgentAppConfig, env: dict[str, str] | No
     def connection_factory():
         return create_connection(pg_config)
 
-    repositories = PostgresRepositoryBundle.from_connection_factory(connection_factory)
-    decision_support_service = DecisionSupportAppService(repositories)
+    repositories = AgentRepositoryBundle.from_connection_factory(connection_factory)
+    decision_support_repositories = DecisionSupportRepositoryBundle.from_connection_factory(connection_factory)
+    decision_support_service = DecisionSupportAppService(decision_support_repositories)
     endpoint_config = OpenAICompatConfig(
         model=config.model,
         base_url=config.base_url,

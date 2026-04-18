@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Protocol
 
 from .openai_compat import OpenAICompatConfig, create_chat_completion, extract_text_content
 from .react import build_correction_message, build_observation_message, build_react_messages, parse_react_step
 from .tools import AgentRuntimeState
+from .context import AgentRepositoryBundle
 
 
 class DecisionSupportGenerator(Protocol):
@@ -14,7 +15,7 @@ class DecisionSupportGenerator(Protocol):
 
 @dataclass
 class DecisionSupportAgent:
-    repositories: Any
+    repositories: AgentRepositoryBundle
     decision_support_service: DecisionSupportGenerator
     endpoint_config: OpenAICompatConfig
     max_reasoning_steps: int = 6

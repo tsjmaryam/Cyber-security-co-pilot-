@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any, Callable, Protocol
 
 from .context import AgentRepositoryBundle
+from src.services.decision_support_app_service import DecisionSupportAppService
+from src.services.dtos import DecisionSupportPayloadDTO, CoverageRecordDTO, DetectorRecordDTO, EvidenceRecordDTO, IncidentRecordDTO
 
 
 ToolHandler = Callable[[dict[str, Any]], dict[str, Any]]
@@ -19,7 +21,7 @@ class AgentTool:
 @dataclass
 class AgentRuntimeState:
     repositories: AgentRepositoryBundle
-    decision_support_service: Any
+    decision_support_service: "DecisionSupportGenerator"
     incident_id: str
     policy_version: str | None = None
     cache: dict[str, Any] = field(default_factory=dict)
@@ -73,28 +75,30 @@ class AgentRuntimeState:
             incident = self.repositories.fetch_incident(self.incident_id)
             if incident is None:
                 raise ValueError(f"Incident not found: {self.incident_id}")
-            self.cache["incident"] = incident
+            self.cache["incident"] = IncidentRecordDTO.from_record(incident)
         return self.cache["incident"]
 
     def _load_evidence_package(self, _: dict[str, Any]) -> dict[str, Any]:
         if "evidence_package" not in self.cache:
-            self.cache["evidence_package"] = self.repositories.fetch_latest_evidence_package(self.incident_id)
+            self.cache["evidence_package"] = EvidenceRecordDTO.from_record(self.repositories.fetch_latest_evidence_package(self.incident_id))
         return {"evidence_package": self.cache["evidence_package"]}
 
     def _load_detector_result(self, _: dict[str, Any]) -> dict[str, Any]:
         if "detector_result" not in self.cache:
-            self.cache["detector_result"] = self.repositories.fetch_latest_detector_result(self.incident_id)
+            result = self.repositories.fetch_latest_detector_result(self.incident_id)
+            self.cache["detector_result"] = DetectorRecordDTO.from_record(result) if result is not None else None
         return {"detector_result": self.cache["detector_result"]}
 
     def _load_coverage_assessment(self, _: dict[str, Any]) -> dict[str, Any]:
         if "coverage_assessment" not in self.cache:
-            self.cache["coverage_assessment"] = self.repositories.fetch_latest_coverage_assessment(self.incident_id)
+            result = self.repositories.fetch_latest_coverage_assessment(self.incident_id)
+            self.cache["coverage_assessment"] = CoverageRecordDTO.from_record(result) if result is not None else None
         return {"coverage_assessment": self.cache["coverage_assessment"]}
 
     def _load_decision_support(self, _: dict[str, Any]) -> dict[str, Any]:
         if "decision_support_result" not in self.cache:
             stored = self.repositories.fetch_latest_decision_support_result(self.incident_id)
-            self.cache["decision_support_result"] = stored
+            self.cache["decision_support_result"] = DecisionSupportPayloadDTO.from_payload(stored)
             if stored is not None:
                 self.decision_support_source = "database"
         return {"decision_support_result": self.cache["decision_support_result"]}
@@ -104,6 +108,10 @@ class AgentRuntimeState:
             self.incident_id,
             policy_version=self.policy_version,
         )
-        self.cache["decision_support_result"] = generated
+        self.cache["decision_support_result"] = DecisionSupportPayloadDTO.from_payload(generated)
         self.decision_support_source = "generated"
         return {"decision_support_result": generated}
+
+
+class DecisionSupportGenerator(Protocol):
+    def generate_for_incident(self, incident_id: str, policy_version: str | None = None) -> dict[str, Any]: ...

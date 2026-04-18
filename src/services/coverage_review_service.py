@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from decision_support.completeness import build_completeness_assessment, build_review_candidates
+from .dtos import CoverageRecordDTO, CoverageReviewDTO, DecisionSupportPayloadDTO, DetectorRecordDTO, EvidenceRecordDTO, IncidentRecordDTO
 
 
 COVERAGE_CATEGORIES = ("login", "identity", "network", "resource_activity")
@@ -69,64 +70,82 @@ def build_coverage_review(
     coverage_record: dict[str, Any],
     decision_support_result: dict[str, Any],
 ) -> dict[str, Any]:
-    ds_payload = _extract_decision_support_payload(decision_support_result) or {}
-    recommended_action = dict(ds_payload.get("recommended_action") or {})
-    completeness_assessment = dict(ds_payload.get("completeness_assessment") or {})
+    dto = build_coverage_review_dto(
+        IncidentRecordDTO.from_record(incident_record),
+        EvidenceRecordDTO.from_record(evidence_record),
+        DetectorRecordDTO.from_record(detector_record),
+        CoverageRecordDTO.from_record(coverage_record),
+        DecisionSupportPayloadDTO.from_payload(decision_support_result),
+    )
+    return dto.to_dict()
+
+
+def build_coverage_review_dto(
+    incident_record: IncidentRecordDTO,
+    evidence_record: EvidenceRecordDTO | None,
+    detector_record: DetectorRecordDTO,
+    coverage_record: CoverageRecordDTO,
+    decision_support_payload: DecisionSupportPayloadDTO | None,
+) -> CoverageReviewDTO:
+    ds_payload = decision_support_payload or DecisionSupportPayloadDTO()
+    recommended_action = dict(ds_payload.recommended_action)
+    completeness_assessment = dict(ds_payload.completeness_assessment)
     if not completeness_assessment:
-        completeness = build_completeness_assessment(_coverage_input(coverage_record))
+        completeness = build_completeness_assessment(coverage_record.to_decision_support_input())
         completeness_assessment = {
             "level": completeness.level.value,
             "warning": completeness.warning,
             "reasons": completeness.reasons,
         }
-    review_candidates = build_review_candidates(_coverage_input(coverage_record))
+    review_candidates = build_review_candidates(coverage_record.to_decision_support_input())
     coverage_by_category = build_coverage_status_by_category(coverage_record)
     risk_note = build_decision_risk_note(recommended_action, completeness_assessment)
-    return {
-        "incident_id": incident_record["incident_id"],
-        "incident_summary": build_incident_summary(incident_record, detector_record, evidence_record),
-        "recommended_action": recommended_action,
-        "alternative_actions": list(ds_payload.get("alternative_actions") or []),
-        "coverage_status_by_category": coverage_by_category,
-        "completeness": completeness_assessment,
-        "recommendation_may_be_incomplete": bool(completeness_assessment.get("warning")),
-        "decision_risk_note": risk_note,
-        "what_could_change_the_decision": build_decision_change_hints(
+    return CoverageReviewDTO(
+        incident_id=incident_record.incident_id,
+        incident_summary=build_incident_summary(incident_record, detector_record, evidence_record),
+        recommended_action=recommended_action,
+        alternative_actions=list(ds_payload.alternative_actions),
+        coverage_status_by_category=coverage_by_category,
+        completeness=completeness_assessment,
+        recommendation_may_be_incomplete=bool(completeness_assessment.get("warning")),
+        decision_risk_note=risk_note,
+        what_could_change_the_decision=build_decision_change_hints(
             coverage_record=coverage_record,
             detector_record=detector_record,
             recommended_action=recommended_action,
             review_candidates=review_candidates,
         ),
-        "double_check": {
+        double_check={
             "available": True,
             "prompt": "Double check missing branches before taking disruptive action.",
             "candidates": review_candidates,
         },
-    }
+    )
 
 
 def build_incident_summary(
-    incident_record: dict[str, Any],
-    detector_record: dict[str, Any],
-    evidence_record: dict[str, Any] | None,
+    incident_record: IncidentRecordDTO,
+    detector_record: DetectorRecordDTO,
+    evidence_record: EvidenceRecordDTO | None,
 ) -> dict[str, Any]:
-    summary_json = dict(evidence_record.get("summary_json") or {}) if evidence_record else {}
-    event_sequence = list(incident_record.get("event_sequence") or summary_json.get("event_sequence") or [])
+    summary_json = evidence_record.summary_json if evidence_record else {}
+    event_sequence = list(incident_record.event_sequence or summary_json.get("event_sequence") or [])
     return {
-        "title": incident_record.get("title") or summary_json.get("title") or f"Incident {incident_record['incident_id']}",
-        "summary": incident_record.get("summary") or summary_json.get("summary") or "Stored incident context",
-        "risk_band": detector_record.get("risk_band"),
-        "risk_score": detector_record.get("risk_score"),
-        "top_signals": list(detector_record.get("top_signals_json") or []),
+        "title": incident_record.title or summary_json.get("title") or f"Incident {incident_record.incident_id}",
+        "summary": incident_record.summary or summary_json.get("summary") or "Stored incident context",
+        "risk_band": detector_record.risk_band,
+        "risk_score": detector_record.risk_score,
+        "top_signals": list(detector_record.top_signals),
         "event_sequence": event_sequence,
-        "primary_actor": incident_record.get("primary_actor"),
-        "entities": incident_record.get("entities"),
+        "primary_actor": incident_record.primary_actor,
+        "entities": incident_record.entities,
     }
 
 
-def build_coverage_status_by_category(coverage_record: dict[str, Any]) -> list[dict[str, Any]]:
-    checks = list(coverage_record.get("checks_json") or [])
-    missing_sources = list(coverage_record.get("missing_sources_json") or [])
+def build_coverage_status_by_category(coverage_record: CoverageRecordDTO | dict[str, Any]) -> list[dict[str, Any]]:
+    coverage = coverage_record if isinstance(coverage_record, CoverageRecordDTO) else CoverageRecordDTO.from_record(coverage_record)
+    checks = list(coverage.checks)
+    missing_sources = list(coverage.missing_sources)
     statuses = []
     for category in COVERAGE_CATEGORIES:
         relevant_checks = [check for check in checks if _matches_category(check.get("name", ""), category)]
@@ -155,19 +174,21 @@ def build_decision_risk_note(recommended_action: dict[str, Any], completeness_as
 
 
 def build_decision_change_hints(
-    coverage_record: dict[str, Any],
-    detector_record: dict[str, Any],
+    coverage_record: CoverageRecordDTO | dict[str, Any],
+    detector_record: DetectorRecordDTO | dict[str, Any],
     recommended_action: dict[str, Any],
     review_candidates: list[str],
 ) -> list[str]:
+    coverage = coverage_record if isinstance(coverage_record, CoverageRecordDTO) else CoverageRecordDTO.from_record(coverage_record)
+    detector = detector_record if isinstance(detector_record, DetectorRecordDTO) else DetectorRecordDTO.from_record(detector_record)
     hints: list[str] = []
-    for source in coverage_record.get("missing_sources_json") or []:
+    for source in coverage.missing_sources:
         hints.append(f"If {source} shows additional suspicious activity, the recommended action may need to change.")
     for candidate in review_candidates[:3]:
         hints.append(f"Completing {candidate.lower()} could confirm or weaken the current recommendation.")
     if recommended_action.get("requires_human_approval"):
         hints.append("If the missing checks do not support elevated misuse, a lower-disruption alternative may be safer.")
-    if detector_record.get("counter_signals_json"):
+    if detector.counter_signals:
         hints.append("Counter-signals may justify a less disruptive response after review.")
     return _dedupe(hints)[:5]
 
@@ -187,16 +208,6 @@ def _aggregate_category_status(relevant_checks: list[dict[str, Any]], relevant_s
 def _matches_category(value: str, category: str) -> bool:
     normalized = str(value).lower().replace("-", "_")
     return any(token in normalized for token in CATEGORY_KEYWORDS[category])
-
-
-def _coverage_input(coverage_record: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "completeness_level": coverage_record["completeness_level"],
-        "incompleteness_reasons": list(coverage_record.get("incompleteness_reasons_json") or []),
-        "checks": list(coverage_record.get("checks_json") or []),
-        "missing_sources": list(coverage_record.get("missing_sources_json") or []),
-    }
-
 
 def _extract_decision_support_payload(result: dict[str, Any] | None) -> dict[str, Any] | None:
     if result is None:

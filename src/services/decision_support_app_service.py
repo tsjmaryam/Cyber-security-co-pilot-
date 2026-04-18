@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from decision_support.service import generate_decision_support
+from .dtos import CoverageRecordDTO, DecisionSupportInputsDTO, DetectorRecordDTO, EvidenceRecordDTO, IncidentRecordDTO, PolicyRecordDTO
 
 
 class RepositoryBundle(Protocol):
@@ -54,47 +55,59 @@ def assemble_decision_support_inputs(
     coverage_record: dict[str, Any],
     policy_record: dict[str, Any],
 ) -> dict[str, Any]:
-    summary_json = dict(evidence_record.get("summary_json") or {}) if evidence_record else {}
+    dto = assemble_decision_support_inputs_dto(
+        IncidentRecordDTO.from_record(incident_record),
+        EvidenceRecordDTO.from_record(evidence_record),
+        DetectorRecordDTO.from_record(detector_record),
+        CoverageRecordDTO.from_record(coverage_record),
+        PolicyRecordDTO.from_record(policy_record),
+    )
+    return dto.to_kwargs()
+
+
+def assemble_decision_support_inputs_dto(
+    incident_record: IncidentRecordDTO,
+    evidence_record: EvidenceRecordDTO | None,
+    detector_record: DetectorRecordDTO,
+    coverage_record: CoverageRecordDTO,
+    policy_record: PolicyRecordDTO,
+) -> DecisionSupportInputsDTO:
+    summary_json = evidence_record.summary_json if evidence_record else {}
     incident = {
-        "incident_id": incident_record["incident_id"],
-        "title": incident_record.get("title") or summary_json.get("title") or f"Incident {incident_record['incident_id']}",
-        "summary": incident_record.get("summary") or summary_json.get("summary") or "Stored incident context",
-        "severity_hint": incident_record.get("severity_hint"),
-        "start_time": _stringify(incident_record.get("start_time")),
-        "end_time": _stringify(incident_record.get("end_time")),
-        "primary_actor": incident_record.get("primary_actor"),
-        "entities": incident_record.get("entities"),
-        "event_sequence": list(incident_record.get("event_sequence") or summary_json.get("event_sequence") or []),
+        "incident_id": incident_record.incident_id,
+        "title": incident_record.title or summary_json.get("title") or f"Incident {incident_record.incident_id}",
+        "summary": incident_record.summary or summary_json.get("summary") or "Stored incident context",
+        "severity_hint": incident_record.severity_hint,
+        "start_time": _stringify(incident_record.start_time),
+        "end_time": _stringify(incident_record.end_time),
+        "primary_actor": incident_record.primary_actor,
+        "entities": incident_record.entities,
+        "event_sequence": list(incident_record.event_sequence or summary_json.get("event_sequence") or []),
     }
     detector_output = {
-        "risk_score": detector_record.get("risk_score"),
-        "risk_band": detector_record.get("risk_band"),
-        "top_signals": list(detector_record.get("top_signals_json") or []),
-        "counter_signals": list(detector_record.get("counter_signals_json") or []),
-        "detector_labels": list(detector_record.get("detector_labels_json") or []),
-        "retrieved_patterns": list(detector_record.get("retrieved_patterns_json") or []),
-        "data_sources_used": list(detector_record.get("data_sources_used_json") or []),
+        "risk_score": detector_record.risk_score,
+        "risk_band": detector_record.risk_band,
+        "top_signals": list(detector_record.top_signals),
+        "counter_signals": list(detector_record.counter_signals),
+        "detector_labels": list(detector_record.detector_labels),
+        "retrieved_patterns": list(detector_record.retrieved_patterns),
+        "data_sources_used": list(detector_record.data_sources_used),
     }
-    coverage = {
-        "completeness_level": coverage_record["completeness_level"],
-        "incompleteness_reasons": list(coverage_record.get("incompleteness_reasons_json") or []),
-        "checks": list(coverage_record.get("checks_json") or []),
-        "missing_sources": list(coverage_record.get("missing_sources_json") or []),
-    }
-    policy = dict(policy_record["policy_json"])
+    coverage = coverage_record.to_decision_support_input()
+    policy = dict(policy_record.policy_json)
     knowledge_context = {
         "playbook_snippets": list(summary_json.get("playbook_snippets") or []),
         "domain_terms": list(summary_json.get("domain_terms") or []),
     }
     operator_context = dict(summary_json.get("operator_context") or {"operator_type": "non_expert"})
-    return {
-        "incident": incident,
-        "detector_output": detector_output,
-        "coverage": coverage,
-        "policy": policy,
-        "knowledge_context": knowledge_context,
-        "operator_context": operator_context,
-    }
+    return DecisionSupportInputsDTO(
+        incident=incident,
+        detector_output=detector_output,
+        coverage=coverage,
+        policy=policy,
+        knowledge_context=knowledge_context,
+        operator_context=operator_context,
+    )
 
 
 def _stringify(value: Any) -> str | None:
