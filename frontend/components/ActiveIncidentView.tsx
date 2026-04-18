@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { IncidentViewModel } from "@/lib/view-model";
 import { toneForCoverageStatus, toneForSeverity } from "@/lib/view-model";
 import { AgentPanel } from "./AgentPanel";
@@ -47,6 +48,8 @@ export function ActiveIncidentView({
   onAgentQuestionChange: (value: string) => void;
   onAgentAsk: () => void;
 }) {
+  const [openSignal, setOpenSignal] = useState<string | null>(null);
+
   return (
     <>
       {viewModel.recommendationMayBeIncomplete ? (
@@ -97,8 +100,20 @@ export function ActiveIncidentView({
           <ul className="signal-list">
             {viewModel.signals.map((signal) => (
               <li key={signal.label}>
-                <strong>{signal.label}</strong>
+                <div className="signal-header">
+                  <strong>{signal.label}</strong>
+                  <button
+                    aria-expanded={openSignal === signal.label}
+                    aria-label={`Explain ${signal.label}`}
+                    className="info-button"
+                    onClick={() => setOpenSignal(openSignal === signal.label ? null : signal.label)}
+                    type="button"
+                  >
+                    i
+                  </button>
+                </div>
                 <p>{signal.detail}</p>
+                {openSignal === signal.label ? <div className="signal-explanation">{signal.explanation}</div> : null}
               </li>
             ))}
           </ul>

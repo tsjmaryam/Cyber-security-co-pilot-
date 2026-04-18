@@ -25,6 +25,10 @@ export default function Home() {
   const [queueError, setQueueError] = useState<string | null>(null);
   const [selectedIncidentId, setSelectedIncidentId] = useState<string>(fallbackQueue[0].id);
   const [incident, setIncident] = useState<RecordShape | null>(null);
+  const [evidencePackage, setEvidencePackage] = useState<RecordShape | null>(null);
+  const [detectorResult, setDetectorResult] = useState<RecordShape | null>(null);
+  const [coverageAssessment, setCoverageAssessment] = useState<RecordShape | null>(null);
+  const [decisionSupportResult, setDecisionSupportResult] = useState<RecordShape | null>(null);
   const [decisionSupport, setDecisionSupport] = useState<RecordShape | null>(null);
   const [coverageReview, setCoverageReview] = useState<RecordShape | null>(null);
   const [operatorHistory, setOperatorHistory] = useState<OperatorHistoryResponse | null>(null);
@@ -46,11 +50,19 @@ export default function Home() {
     logPage("refresh_workspace_success", {
       incidentId,
       hasIncident: Boolean(result.incident),
+      hasEvidencePackage: Boolean(result.evidencePackage),
+      hasDetectorResult: Boolean(result.detectorResult),
+      hasCoverageAssessment: Boolean(result.coverageAssessment),
+      hasDecisionSupportResult: Boolean(result.decisionSupportResult),
       hasDecisionSupport: Boolean(result.decisionSupport),
       hasCoverageReview: Boolean(result.coverageReview),
       hasOperatorHistory: Boolean(result.operatorHistory),
     });
     setIncident(result.incident);
+    setEvidencePackage(result.evidencePackage);
+    setDetectorResult(result.detectorResult);
+    setCoverageAssessment(result.coverageAssessment);
+    setDecisionSupportResult(result.decisionSupportResult);
     setDecisionSupport(result.decisionSupport);
     setCoverageReview(result.coverageReview);
     setOperatorHistory(result.operatorHistory);
@@ -104,6 +116,10 @@ export default function Home() {
         console.error("[frontend/page] load_details_failed", { selectedIncidentId, error });
         setIncidentError(error instanceof ApiError ? error.message : "Could not load incident details.");
         setIncident(null);
+        setEvidencePackage(null);
+        setDetectorResult(null);
+        setCoverageAssessment(null);
+        setDecisionSupportResult(null);
         setDecisionSupport(null);
         setCoverageReview(null);
         setOperatorHistory(null);
@@ -140,8 +156,19 @@ export default function Home() {
   }, [selectedIncidentId]);
 
   const viewModel = useMemo(
-    () => buildIncidentViewModel(incident, decisionSupport, coverageReview, operatorHistory, selectedIncidentId),
-    [coverageReview, decisionSupport, incident, operatorHistory, selectedIncidentId],
+    () =>
+      buildIncidentViewModel(
+        incident,
+        evidencePackage,
+        detectorResult,
+        coverageAssessment,
+        decisionSupportResult,
+        decisionSupport,
+        coverageReview,
+        operatorHistory,
+        selectedIncidentId,
+      ),
+    [coverageAssessment, coverageReview, decisionSupport, decisionSupportResult, detectorResult, evidencePackage, incident, operatorHistory, selectedIncidentId],
   );
 
   async function runAction(action: "approve" | "alternative" | "escalate" | "double-check") {
@@ -264,7 +291,10 @@ export default function Home() {
               onAgentAsk={() => void runAgentQuery()}
             />
           ) : (
-            <AuditTrailView auditEntries={viewModel.auditEntries} />
+            <AuditTrailView
+              operatorAuditEntries={viewModel.operatorAuditEntries}
+              cyberAuditEntries={viewModel.cyberAuditEntries}
+            />
           )}
         </section>
       </div>

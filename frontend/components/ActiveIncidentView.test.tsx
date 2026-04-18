@@ -27,7 +27,7 @@ const viewModel: IncidentViewModel = {
       tradeoff: "Can interrupt legitimate work.",
     },
   ],
-  signals: [{ label: "privilege_change", detail: "Permissions changed." }],
+  signals: [{ label: "Privilege change", detail: "Permissions changed.", explanation: "This means permissions or access levels changed." }],
   timeline: [{ step: "Step 1", title: "ConsoleLogin" }],
   coverage: [{ category: "Network", status: "Not Checked", rawStatus: "not_checked", note: "Missing: network_logs" }],
   whatCouldChange: ["If network_logs shows more activity, the recommendation may change."],
@@ -37,7 +37,7 @@ const viewModel: IncidentViewModel = {
 };
 
 describe("ActiveIncidentView", () => {
-  it("renders warning and enables alternative selection flow", () => {
+  it("renders warning, signal explanation, and enables alternative selection flow", () => {
     const onSelectAlternative = vi.fn();
 
     render(
@@ -66,6 +66,8 @@ describe("ActiveIncidentView", () => {
     );
 
     expect(screen.getByText(/recommendation may be incomplete/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /explain privilege change/i }));
+    expect(screen.getByText(/permissions or access levels changed/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /temporary access lock/i }));
     expect(onSelectAlternative).toHaveBeenCalledWith("temporary_access_lock");
   });

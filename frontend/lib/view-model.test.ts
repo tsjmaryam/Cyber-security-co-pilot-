@@ -40,10 +40,24 @@ describe("view-model helpers", () => {
         entities: { primary_source_ip_address: "203.0.113.10" },
       },
       {
-        decision_support_result: {
-          recommended_action: { action_id: "reset_credentials", label: "Reset credentials", reason: "Reason" },
-        },
+        provenance_json: { source: "demo_runner" },
+        raw_refs_json: { coverage_categories: ["login", "network"] },
       },
+      {
+        risk_band: "high",
+        detector_labels_json: ["privilege_change"],
+        data_sources_used_json: ["demo_stream", "network_logs"],
+      },
+      {
+        completeness_level: "medium",
+        checks_json: [{ name: "network_logs", status: "not_checked" }],
+        missing_sources_json: ["network_logs"],
+      },
+      {
+        recommended_action: { action_id: "reset_credentials", label: "Reset credentials", reason: "Reason" },
+        alternative_actions: [{ action_id: "escalate_to_expert", label: "Escalate", reason: "Reason", tradeoff: "Tradeoff" }],
+      },
+      null,
       {
         incident_summary: {
           title: "Incident title",
@@ -73,9 +87,12 @@ describe("view-model helpers", () => {
 
     expect(model.recommendedAction.label).toBe("Reset credentials");
     expect(model.signals[0].label).toBe("Privilege change");
+    expect(model.signals[0].explanation).toContain("permissions or access levels changed");
     expect(model.coverage[0].status).toBe("Not checked");
     expect(model.coverage[0].note).toContain("network_logs");
     expect(model.recommendationMayBeIncomplete).toBe(true);
+    expect(model.cyberAuditEntries[0].title).toContain("Evidence package");
+    expect(model.cyberAuditEntries[1].title).toContain("Detector scored high risk");
   });
 
   it("maps known backend keys to operator-facing labels", () => {

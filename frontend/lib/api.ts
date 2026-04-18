@@ -94,6 +94,10 @@ export async function loadIncidentWorkspace(incidentId: string): Promise<Inciden
 
   return {
     incident: incidentContext.incident,
+    evidencePackage: incidentContext.evidence_package ?? null,
+    detectorResult: incidentContext.detector_result ?? null,
+    coverageAssessment: incidentContext.coverage_assessment ?? null,
+    decisionSupportResult: incidentContext.decision_support_result ?? null,
     decisionSupport: decisionSupportResult.status === "fulfilled" ? decisionSupportResult.value.result : null,
     coverageReview: coverageReviewResult.status === "fulfilled" ? coverageReviewResult.value.review : null,
     operatorHistory: operatorHistoryResult.status === "fulfilled" ? operatorHistoryResult.value : null,
