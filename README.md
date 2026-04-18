@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="**https://raw.githubusercontent.com/jduron24/Cyber-security-co-pilot/main/logo.png**" alt="Cyber Security Co-Pilot Logo" width="260">
-</p>
-
 
 <p align="center">
   © 2025 Jonathan Duron, Eli Talbert, Anthony Cordetti, Maryam Shahbaz Ali
