@@ -1,20 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-const queue = [
+import { ApiError, listIncidents, loadIncidentWorkspace } from "@/lib/api";
+import type { RecordShape } from "@/types/api";
+
+const fallbackQueue = [
   { id: "INC-1042", site: "Water Plant East", severity: "High", state: "Needs review" },
   { id: "INC-1038", site: "County Records", severity: "Medium", state: "Monitoring" },
   { id: "INC-1033", site: "City Hospital Annex", severity: "Low", state: "Closed" },
 ];
 
-const signals = [
+const fallbackSignals = [
   "17 failed sign-in attempts in 3 minutes from an unfamiliar source",
   "The same account moved from sign-in failures into identity lookups",
   "Access-key related activity appeared after the login burst",
 ];
 
-const timeline = [
+const fallbackTimeline = [
   {
     time: "08:41",
     title: "Unusual sign-in activity detected",
@@ -35,13 +38,13 @@ const timeline = [
   },
 ];
 
-const coverage = [
+const fallbackCoverage = [
   { label: "Login telemetry", status: "Checked", note: "Suspicious pattern confirmed" },
   { label: "Identity activity", status: "Checked", note: "Privilege-related actions present" },
   { label: "Network telemetry", status: "Missing", note: "Still needed before final containment" },
 ];
 
-const actions = [
+const fallbackActions = [
   {
     label: "Temporarily lock access",
     kind: "Recommended",
@@ -75,8 +78,172 @@ function StatusPill({
   return <span className={`status-pill status-pill--${tone}`}>{children}</span>;
 }
 
+function asRecord(value: unknown): RecordShape {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as RecordShape) : {};
+}
+
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function asString(value: unknown, fallback = "Unavailable"): string {
+  return typeof value === "string" && value.trim() ? value : fallback;
+}
+
+function toSentenceCase(value: string): string {
+  if (!value) return "Unavailable";
+  return value
+    .split(/[_-]/g)
+    .map((part) => (part ? part[0].toUpperCase() + part.slice(1) : part))
+    .join(" ");
+}
+
+function mapQueueItem(item: RecordShape) {
+  const entities = asRecord(item.entities);
+  return {
+    id: asString(item.incident_id, "incident"),
+    site: asString(entities.primary_source_ip_address ?? item.title, "Unknown site"),
+    severity: toSentenceCase(asString(item.severity_hint, "unknown")),
+    state: "Needs review",
+  };
+}
+
 export default function Home() {
   const [selectedView, setSelectedView] = useState<"active" | "audit">("active");
+  const [showDebug, setShowDebug] = useState(false);
+  const [queue, setQueue] = useState(fallbackQueue);
+  const [queueError, setQueueError] = useState<string | null>(null);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string>(fallbackQueue[0].id);
+  const [incident, setIncident] = useState<RecordShape | null>(null);
+  const [decisionSupport, setDecisionSupport] = useState<RecordShape | null>(null);
+  const [coverageReview, setCoverageReview] = useState<RecordShape | null>(null);
+  const [incidentLoading, setIncidentLoading] = useState(false);
+  const [incidentError, setIncidentError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadQueue() {
+      try {
+        const result = await listIncidents();
+        if (cancelled || result.length === 0) return;
+        const mapped = result.map(mapQueueItem);
+        setQueue(mapped);
+        setSelectedIncidentId(mapped[0].id);
+        setQueueError(null);
+      } catch (error) {
+        if (cancelled) return;
+        setQueueError(error instanceof ApiError ? error.message : "Could not load incidents.");
+      }
+    }
+
+    void loadQueue();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDetails() {
+      if (!selectedIncidentId.startsWith("incident_")) {
+        return;
+      }
+      setIncidentLoading(true);
+      setIncidentError(null);
+      try {
+        const result = await loadIncidentWorkspace(selectedIncidentId);
+        if (cancelled) return;
+        setIncident(result.incident);
+        setDecisionSupport(result.decisionSupport);
+        setCoverageReview(result.coverageReview);
+      } catch (error) {
+        if (cancelled) return;
+        setIncidentError(error instanceof ApiError ? error.message : "Could not load incident details.");
+        setIncident(null);
+        setDecisionSupport(null);
+        setCoverageReview(null);
+      } finally {
+        if (!cancelled) {
+          setIncidentLoading(false);
+        }
+      }
+    }
+
+    void loadDetails();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedIncidentId]);
+
+  const summary = useMemo(() => {
+    const coverageReviewRecord = asRecord(coverageReview);
+    const incidentSummary = asRecord(coverageReviewRecord.incident_summary);
+    const decisionSupportRecord = asRecord(decisionSupport);
+    const decisionSupportResult = asRecord(decisionSupportRecord.decision_support_result);
+    const recommendedAction = asRecord(decisionSupportResult.recommended_action);
+
+    const signals = asArray(incidentSummary.top_signals)
+      .map((item) => asString(asRecord(item).label, "Signal"))
+      .filter(Boolean);
+
+    const coverageItems = asArray(coverageReviewRecord.coverage_status_by_category).map((item) => {
+      const row = asRecord(item);
+      return {
+        label: toSentenceCase(asString(row.category, "coverage")),
+        status: toSentenceCase(asString(row.status, "unknown")),
+        note:
+          asArray(row.missing_sources).map((source) => asString(source, "")).filter(Boolean).join(", ") ||
+          `${toSentenceCase(asString(row.status, "unknown"))} coverage state`,
+      };
+    });
+
+    const alternatives = asArray(coverageReviewRecord.alternative_actions).map((item) => {
+      const row = asRecord(item);
+      return {
+        label: asString(row.label ?? row.action_id, "Alternative"),
+        kind: "Alternative",
+        detail: asString(row.tradeoff ?? row.reason, "No tradeoff available."),
+      };
+    });
+
+    const timeline = asArray(asRecord(incident).event_sequence).slice(0, 5).map((item, index) => ({
+      time: `Step ${index + 1}`,
+      title: asString(item, "Activity"),
+      detail: index === 0 ? "Part of the observed incident sequence." : "Observed later in the same incident.",
+      tone: index === 0 ? "critical" : "warning",
+    }));
+
+    return {
+      title: asString(incidentSummary.title ?? asRecord(incident).title, "Suspicious access activity"),
+      incidentId: asString(asRecord(incident).incident_id, selectedIncidentId),
+      severity: toSentenceCase(asString(incidentSummary.risk_band ?? asRecord(incident).severity_hint, "high")),
+      site: asString(
+        asRecord(asRecord(incident).entities).primary_source_ip_address ?? asRecord(incident).title,
+        "Unknown site",
+      ),
+      summary: asString(
+        incidentSummary.summary ?? asRecord(incident).summary,
+        "Sentinel is ready to summarize this incident once backend detail is available.",
+      ),
+      recommendedAction: {
+        label: asString(recommendedAction.label ?? recommendedAction.action_id, fallbackActions[0].label),
+        detail: asString(
+          recommendedAction.reason ?? coverageReviewRecord.decision_risk_note,
+          fallbackActions[0].detail,
+        ),
+      },
+      confidence:
+        typeof incidentSummary.risk_score === "number" ? Math.round(incidentSummary.risk_score * 100) : 84,
+      signals: signals.length ? signals : fallbackSignals,
+      coverage: coverageItems.length ? coverageItems : fallbackCoverage,
+      actions: alternatives.length ? alternatives : fallbackActions,
+      timeline: timeline.length ? timeline : fallbackTimeline,
+    };
+  }, [coverageReview, decisionSupport, incident, selectedIncidentId]);
 
   return (
     <main className="sentinel-shell">
@@ -104,16 +271,28 @@ export default function Home() {
             >
               Audit trail
             </button>
+            <button
+              className={`nav-item${showDebug ? " nav-item--active" : ""}`}
+              onClick={() => setShowDebug((value) => !value)}
+            >
+              {showDebug ? "Hide debug" : "Show debug"}
+            </button>
           </nav>
 
           <section className="queue-panel">
             <div className="rail-heading">
               <span>Incident queue</span>
-              <strong>3 open</strong>
+              <strong>{queue.length} loaded</strong>
             </div>
+            {queueError ? <p className="queue-error">{queueError}</p> : null}
             <div className="queue-list">
-              {queue.map((item, index) => (
-                <div className={`queue-item${index === 0 ? " queue-item--active" : ""}`} key={item.id}>
+              {queue.map((item) => (
+                <button
+                  className={`queue-item${item.id === selectedIncidentId ? " queue-item--active" : ""}`}
+                  key={item.id}
+                  onClick={() => setSelectedIncidentId(item.id)}
+                  type="button"
+                >
                   <div>
                     <strong>{item.id}</strong>
                     <p>{item.site}</p>
@@ -122,7 +301,7 @@ export default function Home() {
                     <span>{item.severity}</span>
                     <small>{item.state}</small>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </section>
@@ -134,14 +313,16 @@ export default function Home() {
               <header className="topbar">
                 <div>
                   <p className="eyebrow">Current incident</p>
-                  <h2>INC-1042 • Water Plant East</h2>
+                  <h2>{summary.incidentId} • {summary.site}</h2>
                 </div>
                 <div className="topbar-meta">
-                  <StatusPill tone="critical">High severity</StatusPill>
-                  <StatusPill tone="warning">Approval required</StatusPill>
+                  <StatusPill tone="critical">{summary.severity}</StatusPill>
+                  <StatusPill tone="warning">{incidentLoading ? "Loading details" : "Details loaded"}</StatusPill>
                   <StatusPill tone="safe">Audit active</StatusPill>
                 </div>
               </header>
+
+              {incidentError ? <div className="warning-banner">{incidentError}</div> : null}
 
               <section className="hero-strip reveal reveal-delay-2">
                 <article className="card card--hero-main">
@@ -149,12 +330,8 @@ export default function Home() {
                     <span className="card-kicker">Plain-language summary</span>
                     <StatusPill tone="critical">Live</StatusPill>
                   </div>
-                  <h3>Someone may be trying to gain access they should not have.</h3>
-                  <p>
-                    Sentinel saw a burst of failed sign-ins followed by identity-related activity on a privileged
-                    account. This is not a confirmed breach, but it is unusual enough that the operator should review
-                    a safe next step now.
-                  </p>
+                  <h3>{summary.title}</h3>
+                  <p>{summary.summary}</p>
                 </article>
 
                 <article className="card card--hero-side">
@@ -162,8 +339,8 @@ export default function Home() {
                     <span className="card-kicker">Recommended action</span>
                     <StatusPill tone="warning">Human in the loop</StatusPill>
                   </div>
-                  <h3>Temporarily lock access</h3>
-                  <p>This is the fastest safe containment step while the missing network context is reviewed.</p>
+                  <h3>{summary.recommendedAction.label}</h3>
+                  <p>{summary.recommendedAction.detail}</p>
                   <div className="action-stack">
                     <button className="cta cta--primary">Approve action</button>
                     <button className="cta cta--secondary">Review alternatives</button>
@@ -175,10 +352,10 @@ export default function Home() {
                 <article className="card card--primary reveal reveal-delay-2">
                   <div className="card-heading">
                     <span className="card-kicker">Why Sentinel is concerned</span>
-                    <StatusPill tone="warning">3 strong signals</StatusPill>
+                    <StatusPill tone="warning">{summary.signals.length} strong signals</StatusPill>
                   </div>
                   <ul className="signal-list">
-                    {signals.map((signal) => (
+                    {summary.signals.map((signal) => (
                       <li key={signal}>{signal}</li>
                     ))}
                   </ul>
@@ -187,12 +364,12 @@ export default function Home() {
                 <article className="card reveal reveal-delay-3">
                   <div className="card-heading">
                     <span className="card-kicker">Confidence</span>
-                    <strong className="metric-value">84%</strong>
+                    <strong className="metric-value">{summary.confidence}%</strong>
                   </div>
                   <p className="muted">High enough to recommend action, but not high enough to skip review.</p>
                   <div className="meter">
                     <div className="meter-track" aria-hidden="true">
-                      <span className="meter-fill" style={{ width: "84%" }} />
+                      <span className="meter-fill" style={{ width: `${summary.confidence}%` }} />
                     </div>
                   </div>
                 </article>
@@ -203,7 +380,7 @@ export default function Home() {
                     <StatusPill tone="neutral">Recent</StatusPill>
                   </div>
                   <div className="timeline">
-                    {timeline.map((item) => (
+                    {summary.timeline.map((item) => (
                       <div className="timeline-row" key={item.time + item.title}>
                         <div className={`timeline-dot timeline-dot--${item.tone}`} />
                         <div className="timeline-content">
@@ -221,10 +398,10 @@ export default function Home() {
                 <article className="card reveal reveal-delay-4">
                   <div className="card-heading">
                     <span className="card-kicker">Coverage and blind spots</span>
-                    <StatusPill tone="warning">1 gap</StatusPill>
+                    <StatusPill tone="warning">{summary.coverage.length} items</StatusPill>
                   </div>
                   <div className="check-grid">
-                    {coverage.map((check) => (
+                    {summary.coverage.map((check) => (
                       <div className="check-card" key={check.label}>
                         <div className="check-header">
                           <strong>{check.label}</strong>
@@ -242,7 +419,7 @@ export default function Home() {
                     <StatusPill tone="safe">Operator review</StatusPill>
                   </div>
                   <div className="decision-list">
-                    {actions.map((action) => (
+                    {summary.actions.map((action) => (
                       <div className="decision-item" key={action.label}>
                         <div>
                           <div className="decision-label-row">
@@ -295,6 +472,53 @@ export default function Home() {
               </section>
             </>
           )}
+
+          {showDebug ? (
+            <section className="debug-panel">
+              <article className="card card--wide">
+                <div className="card-heading">
+                  <span className="card-kicker">Debug payloads</span>
+                  <StatusPill tone="neutral">Developer view</StatusPill>
+                </div>
+                <div className="debug-grid">
+                  <div className="debug-block">
+                    <strong>Queue payload</strong>
+                    <pre>{JSON.stringify(queue, null, 2)}</pre>
+                  </div>
+                  <div className="debug-block">
+                    <strong>Selected incident ID</strong>
+                    <pre>{JSON.stringify(selectedIncidentId, null, 2)}</pre>
+                  </div>
+                  <div className="debug-block">
+                    <strong>Incident payload</strong>
+                    <pre>{JSON.stringify(incident, null, 2)}</pre>
+                  </div>
+                  <div className="debug-block">
+                    <strong>Decision support payload</strong>
+                    <pre>{JSON.stringify(decisionSupport, null, 2)}</pre>
+                  </div>
+                  <div className="debug-block">
+                    <strong>Coverage review payload</strong>
+                    <pre>{JSON.stringify(coverageReview, null, 2)}</pre>
+                  </div>
+                  <div className="debug-block">
+                    <strong>Errors and loading</strong>
+                    <pre>
+                      {JSON.stringify(
+                        {
+                          queueError,
+                          incidentError,
+                          incidentLoading,
+                        },
+                        null,
+                        2,
+                      )}
+                    </pre>
+                  </div>
+                </div>
+              </article>
+            </section>
+          ) : null}
         </section>
       </div>
     </main>

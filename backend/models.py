@@ -17,6 +17,10 @@ class SearchResponse(BaseModel):
     results: list[dict[str, Any]]
 
 
+class IncidentListResponse(BaseModel):
+    incidents: list[dict[str, Any]]
+
+
 class IncidentContextResponse(BaseModel):
     incident: dict[str, Any]
     evidence_package: dict[str, Any] | None = None

@@ -21,6 +21,12 @@ class FakeKnowledgeBaseRepository:
 
 
 class FakeCoverageReviewRepositories:
+    def list_incidents(self, limit: int = 25):
+        return [
+            {"incident_id": "incident-2", "title": "Stored incident 2", "severity_hint": "medium"},
+            {"incident_id": "incident-1", "title": "Stored incident", "severity_hint": "high"},
+        ][:limit]
+
     def fetch_incident(self, incident_id: str):
         return {"incident_id": incident_id, "title": "Stored incident"}
 
@@ -85,6 +91,10 @@ def test_backend_incident_routes(monkeypatch):
     app.dependency_overrides[get_decision_support_service] = lambda: FakeDecisionSupportService()
     app.dependency_overrides[get_coverage_review_service] = lambda: FakeCoverageReviewService()
     client = TestClient(app)
+
+    list_response = client.get("/incidents", params={"limit": 2})
+    assert list_response.status_code == 200
+    assert list_response.json()["incidents"][0]["incident_id"] == "incident-2"
 
     incident_response = client.get("/incidents/incident-1")
     assert incident_response.status_code == 200

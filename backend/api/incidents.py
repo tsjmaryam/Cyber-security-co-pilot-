@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from backend.dependencies import (
     as_http_exception,
@@ -8,12 +8,20 @@ from backend.dependencies import (
     get_coverage_review_service,
     get_decision_support_service,
 )
-from backend.models import CoverageReviewResponse, DecisionSupportResponse, IncidentContextResponse
+from backend.models import CoverageReviewResponse, DecisionSupportResponse, IncidentContextResponse, IncidentListResponse
 from src.repositories.service_bundles import CoverageReviewRepositoryBundle
 from src.services.coverage_review_service import CoverageReviewAppService
 from src.services.decision_support_app_service import DecisionSupportAppService
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
+
+
+@router.get("", response_model=IncidentListResponse)
+def list_incidents(
+    limit: int = Query(25, ge=1, le=100),
+    repositories: CoverageReviewRepositoryBundle = Depends(get_coverage_review_repositories),
+) -> IncidentListResponse:
+    return IncidentListResponse(incidents=repositories.list_incidents(limit))
 
 
 @router.get("/{incident_id}", response_model=IncidentContextResponse)
