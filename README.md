@@ -42,6 +42,12 @@ To build the operator-facing coverage review object that emphasizes blind spots 
 python -c "from src.services.coverage_review_service import CoverageReviewAppService; print('Use CoverageReviewAppService with the Postgres repository bundle to assemble operator review payloads.')"
 ```
 
+To record the human decision and audit trail after review:
+
+```bash
+python -c "from src.services.operator_decision_service import OperatorDecisionAppService; print('Use OperatorDecisionAppService to record approved recommendations, alternative choices, escalations, and double-check requests.')"
+```
+
 To query the new model-agnostic agent against a Postgres-backed incident using any OpenAI-compatible chat endpoint:
 
 ```bash
@@ -107,6 +113,7 @@ Default config lives in `configs/pipeline_config.yaml` and behavioral flag rules
 - `src/repositories/`: Postgres repository layer for incident context, evidence packages, detector outputs, policy snapshots, and saved decision-support results
 - `src/services/decision_support_app_service.py`: application service that assembles DB records into the pure decision-support inputs
 - `src/services/coverage_review_service.py`: operator-facing blind-spot review service that assembles recommendation, alternatives, completeness, and double-check candidates
+- `src/services/operator_decision_service.py`: records operator approvals, alternative choices, escalations, and double-check requests with snapshots of what the user saw
 - `src/agent/`: model-agnostic ReAct agent module that grounds chat responses in Postgres-backed context and decision-support outputs
 - `src/services/agent_app_service.py`: application factory and convenience entrypoint for OpenAI-compatible incident queries
 - `decision_support/`: standalone package for deterministic non-expert decision guidance

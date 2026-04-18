@@ -201,6 +201,8 @@ def _coverage_input(coverage_record: dict[str, Any]) -> dict[str, Any]:
 def _extract_decision_support_payload(result: dict[str, Any] | None) -> dict[str, Any] | None:
     if result is None:
         return None
+    if "recommended_action" in result or "alternative_actions" in result:
+        return result
     if "decision_support_result" in result:
         return result["decision_support_result"]
     return result.get("result_json")

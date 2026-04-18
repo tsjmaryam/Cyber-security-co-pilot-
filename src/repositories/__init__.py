@@ -1,1 +1,1 @@
-"""Repository layer for Postgres-backed context and evidence access."""
+"""Repository layer for Postgres-backed context, evidence access, and operator audit logging."""

@@ -1,0 +1,83 @@
+from __future__ import annotations
+
+import json
+from typing import Any, Callable
+
+
+class OperatorDecisionRepository:
+    def __init__(self, connection_factory: Callable[[], Any]):
+        self._connection_factory = connection_factory
+
+    def save_operator_decision(
+        self,
+        incident_id: str,
+        decision_type: str,
+        selected_from: str,
+        chosen_action_id: str | None,
+        chosen_action_label: str | None,
+        rationale: str | None,
+        used_double_check: bool,
+        actor: dict[str, Any] | None,
+        coverage_review: dict[str, Any],
+        decision_support_result: dict[str, Any] | None,
+    ) -> None:
+        query = """
+        INSERT INTO operator_decisions (
+            incident_id, decision_type, selected_from, chosen_action_id, chosen_action_label,
+            rationale, used_double_check, actor_json, coverage_review_json, decision_support_result_json
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s::jsonb)
+        """
+        params = (
+            incident_id,
+            decision_type,
+            selected_from,
+            chosen_action_id,
+            chosen_action_label,
+            rationale,
+            used_double_check,
+            json.dumps(actor or {}),
+            json.dumps(coverage_review),
+            json.dumps(decision_support_result) if decision_support_result is not None else None,
+        )
+        with self._connection_factory() as conn:
+            with conn.cursor() as cur:
+                cur.execute(query, params)
+            conn.commit()
+
+    def save_review_event(
+        self,
+        incident_id: str,
+        event_type: str,
+        payload: dict[str, Any],
+        actor: dict[str, Any] | None = None,
+    ) -> None:
+        query = """
+        INSERT INTO decision_review_events (incident_id, event_type, actor_json, payload_json)
+        VALUES (%s, %s, %s::jsonb, %s::jsonb)
+        """
+        params = (
+            incident_id,
+            event_type,
+            json.dumps(actor or {}),
+            json.dumps(payload),
+        )
+        with self._connection_factory() as conn:
+            with conn.cursor() as cur:
+                cur.execute(query, params)
+            conn.commit()
+
+    def fetch_latest_operator_decision(self, incident_id: str) -> dict[str, Any] | None:
+        query = """
+        SELECT incident_id, decision_type, selected_from, chosen_action_id, chosen_action_label, rationale,
+               used_double_check, actor_json, coverage_review_json, decision_support_result_json, created_at
+        FROM operator_decisions
+        WHERE incident_id = %s
+        ORDER BY created_at DESC, operator_decision_id DESC
+        LIMIT 1
+        """
+        with self._connection_factory() as conn:
+            with conn.cursor() as cur:
+                cur.execute(query, (incident_id,))
+                row = cur.fetchone()
+                return dict(row) if row is not None else None

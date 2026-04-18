@@ -7,6 +7,7 @@ from .decision_support_repo import DecisionSupportResultsRepository
 from .detector_repo import DetectorRepository
 from .evidence_repo import EvidenceRepository
 from .incidents_repo import IncidentsRepository
+from .operator_decision_repo import OperatorDecisionRepository
 from .policy_repo import PolicyRepository
 
 
@@ -17,6 +18,7 @@ class PostgresRepositoryBundle:
     detector_repo: DetectorRepository
     policy_repo: PolicyRepository
     decision_support_repo: DecisionSupportResultsRepository
+    operator_decision_repo: OperatorDecisionRepository
 
     @classmethod
     def from_connection_factory(cls, connection_factory: Callable[[], Any]) -> "PostgresRepositoryBundle":
@@ -26,6 +28,7 @@ class PostgresRepositoryBundle:
             detector_repo=DetectorRepository(connection_factory),
             policy_repo=PolicyRepository(connection_factory),
             decision_support_repo=DecisionSupportResultsRepository(connection_factory),
+            operator_decision_repo=OperatorDecisionRepository(connection_factory),
         )
 
     def fetch_incident(self, incident_id: str):
@@ -48,3 +51,12 @@ class PostgresRepositoryBundle:
 
     def fetch_latest_decision_support_result(self, incident_id: str):
         return self.decision_support_repo.fetch_latest_decision_support_result(incident_id)
+
+    def save_operator_decision(self, **kwargs):
+        self.operator_decision_repo.save_operator_decision(**kwargs)
+
+    def save_review_event(self, **kwargs):
+        self.operator_decision_repo.save_review_event(**kwargs)
+
+    def fetch_latest_operator_decision(self, incident_id: str):
+        return self.operator_decision_repo.fetch_latest_operator_decision(incident_id)

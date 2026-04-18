@@ -80,3 +80,31 @@ CREATE TABLE IF NOT EXISTS decision_support_results (
 );
 
 CREATE INDEX IF NOT EXISTS idx_decision_support_results_incident_id ON decision_support_results(incident_id);
+
+CREATE TABLE IF NOT EXISTS operator_decisions (
+    operator_decision_id BIGSERIAL PRIMARY KEY,
+    incident_id TEXT NOT NULL REFERENCES incidents(incident_id) ON DELETE CASCADE,
+    decision_type TEXT NOT NULL,
+    selected_from TEXT NOT NULL,
+    chosen_action_id TEXT,
+    chosen_action_label TEXT,
+    rationale TEXT,
+    used_double_check BOOLEAN NOT NULL DEFAULT FALSE,
+    actor_json JSONB,
+    coverage_review_json JSONB NOT NULL,
+    decision_support_result_json JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_operator_decisions_incident_id ON operator_decisions(incident_id);
+
+CREATE TABLE IF NOT EXISTS decision_review_events (
+    decision_review_event_id BIGSERIAL PRIMARY KEY,
+    incident_id TEXT NOT NULL REFERENCES incidents(incident_id) ON DELETE CASCADE,
+    event_type TEXT NOT NULL,
+    actor_json JSONB,
+    payload_json JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_decision_review_events_incident_id ON decision_review_events(incident_id);
