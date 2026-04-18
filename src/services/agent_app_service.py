@@ -11,6 +11,7 @@ from src.agent.auth import (
     should_use_codex_auth,
     validate_codex_auth_base_url,
 )
+from src.agent.mcp_client import McpCyberContextClient
 from src.agent.mock_agent import generate_mock_agent_response
 from src.agent.openai_compat import OpenAICompatConfig
 from src.agent.service import DecisionSupportAgent
@@ -74,6 +75,7 @@ def build_postgres_backed_agent(config: AgentAppConfig, env: dict[str, str] | No
     repositories = AgentRepositoryBundle.from_connection_factory(connection_factory)
     decision_support_repositories = DecisionSupportRepositoryBundle.from_connection_factory(connection_factory)
     decision_support_service = DecisionSupportAppService(decision_support_repositories)
+    mcp_client = McpCyberContextClient.from_env(env)
     endpoint_config = OpenAICompatConfig(
         model=config.model,
         base_url=config.base_url,
@@ -85,6 +87,7 @@ def build_postgres_backed_agent(config: AgentAppConfig, env: dict[str, str] | No
     return DecisionSupportAgent(
         repositories=repositories,
         decision_support_service=decision_support_service,
+        mcp_client=mcp_client,
         endpoint_config=endpoint_config,
         max_reasoning_steps=config.max_reasoning_steps,
     )

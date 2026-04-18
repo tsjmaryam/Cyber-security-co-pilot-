@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Protocol
 
 from src.logging_utils import get_logger
+from .mcp_client import McpCyberContextClient, McpClientError
 from .context import AgentRepositoryBundle
 from src.services.decision_support_app_service import DecisionSupportAppService
 from src.services.dtos import DecisionSupportPayloadDTO, CoverageRecordDTO, DetectorRecordDTO, EvidenceRecordDTO, IncidentRecordDTO
@@ -27,11 +28,12 @@ class AgentRuntimeState:
     decision_support_service: "DecisionSupportGenerator"
     incident_id: str
     policy_version: str | None = None
+    mcp_client: McpCyberContextClient | None = None
     cache: dict[str, Any] = field(default_factory=dict)
     decision_support_source: str | None = None
 
     def build_tools(self) -> dict[str, AgentTool]:
-        return {
+        tools = {
             "load_incident": AgentTool(
                 name="load_incident",
                 description="Load the incident record and core identifiers for the current incident.",
@@ -63,6 +65,13 @@ class AgentRuntimeState:
                 handler=self._generate_decision_support,
             ),
         }
+        if self.mcp_client and self.mcp_client.enabled:
+            tools["load_mcp_cyber_context"] = AgentTool(
+                name="load_mcp_cyber_context",
+                description="Search the MCP cyber knowledge base for relevant ATT&CK techniques, threats, and mitigations related to the current incident.",
+                handler=self._load_mcp_cyber_context,
+            )
+        return tools
 
     def context_summary(self) -> dict[str, bool]:
         return {
@@ -71,6 +80,7 @@ class AgentRuntimeState:
             "has_detector_result": self.cache.get("detector_result") is not None,
             "has_coverage_assessment": self.cache.get("coverage_assessment") is not None,
             "has_decision_support_result": self.cache.get("decision_support_result") is not None,
+            "has_mcp_cyber_context": self.cache.get("mcp_cyber_context") is not None,
         }
 
     def _load_incident(self, _: dict[str, Any]) -> dict[str, Any]:
@@ -130,6 +140,38 @@ class AgentRuntimeState:
         self.cache["decision_support_result"] = DecisionSupportPayloadDTO.from_payload(generated)
         self.decision_support_source = "generated"
         return {"decision_support_result": generated}
+
+    def _load_mcp_cyber_context(self, payload: dict[str, Any]) -> dict[str, Any]:
+        if self.mcp_client is None or not self.mcp_client.enabled:
+            return {"mcp_cyber_context": []}
+        query = str(payload.get("query") or "").strip()
+        limit = int(payload.get("limit") or 5)
+        if not query:
+            query = self._default_mcp_query()
+        logger.info("Agent tool load_mcp_cyber_context incident_id=%s query=%s", self.incident_id, query)
+        try:
+            rows = self.mcp_client.search(query=query, limit=limit)
+        except McpClientError as exc:
+            logger.warning("Agent MCP cyber context failed incident_id=%s error=%s", self.incident_id, exc)
+            rows = []
+        self.cache["mcp_cyber_context"] = rows
+        return {"mcp_cyber_context": rows}
+
+    def _default_mcp_query(self) -> str:
+        parts: list[str] = []
+        incident = self.cache.get("incident")
+        detector = self.cache.get("detector_result")
+        evidence = self.cache.get("evidence_package")
+        if incident is not None:
+            parts.extend([incident.title or "", incident.summary or ""])
+            parts.extend(incident.event_sequence or [])
+        if detector is not None:
+            parts.extend(str(label) for label in detector.detector_labels)
+            parts.extend(str(pattern) for pattern in detector.retrieved_patterns)
+        if evidence is not None:
+            summary = evidence.summary_json or {}
+            parts.extend(str(item.get("title")) for item in summary.get("domain_terms", []) if isinstance(item, dict))
+        return " ".join(part for part in parts if part)
 
 
 class DecisionSupportGenerator(Protocol):

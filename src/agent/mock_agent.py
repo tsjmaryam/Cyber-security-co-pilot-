@@ -87,6 +87,7 @@ def generate_mock_agent_response(
             "has_detector_result": context.detector_result is not None,
             "has_coverage_assessment": context.coverage_assessment is not None,
             "has_decision_support_result": decision_support is not None,
+            "has_mcp_cyber_context": False,
         },
         "reasoning_trace": reasoning_trace,
         "raw_response": {"mock_mode": True},

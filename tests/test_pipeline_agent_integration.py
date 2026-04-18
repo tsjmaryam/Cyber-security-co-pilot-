@@ -170,6 +170,7 @@ def test_pipeline_flags_suspicious_incident_and_agent_reasons_over_decision_supp
     agent = DecisionSupportAgent(
         repositories=bundle,
         decision_support_service=decision_support_service,
+        mcp_client=None,
         endpoint_config=OpenAICompatConfig(model="test-model", base_url="https://example.test/v1"),
     )
     agent_result = agent.respond(incident_id, "What should I do next and why?", request_fn=request)

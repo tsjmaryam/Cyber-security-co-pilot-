@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from src.logging_utils import get_logger
+from .mcp_client import McpCyberContextClient
 from .openai_compat import OpenAICompatConfig, create_chat_completion, extract_text_content
 from .react import build_correction_message, build_observation_message, build_react_messages, parse_react_step
 from .tools import AgentRuntimeState
@@ -37,6 +38,7 @@ def recover_answer_after_loop(
 class DecisionSupportAgent:
     repositories: AgentRepositoryBundle
     decision_support_service: DecisionSupportGenerator
+    mcp_client: McpCyberContextClient | None
     endpoint_config: OpenAICompatConfig
     max_reasoning_steps: int = 6
 
@@ -53,6 +55,7 @@ class DecisionSupportAgent:
             decision_support_service=self.decision_support_service,
             incident_id=incident_id,
             policy_version=policy_version,
+            mcp_client=self.mcp_client,
         )
         tools = runtime.build_tools()
         messages = build_react_messages(

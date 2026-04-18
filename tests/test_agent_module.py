@@ -55,6 +55,13 @@ class FakeDecisionSupportService:
         return {"decision_support_result": {"incident_id": incident_id, "recommended_action": {"action_id": "reset_credentials"}}}
 
 
+class FakeMcpClient:
+    enabled = True
+
+    def search(self, query: str, limit: int = 5):
+        return [{"title": "Brute Force", "domain": "Credential Access", "score": 0.9}][:limit]
+
+
 def fake_request(request):
     return FakeResponse({"choices": [{"message": {"content": "Use the stored decision support and review missing checks."}}]})
 
@@ -132,6 +139,7 @@ def test_agent_uses_existing_decision_support_when_present():
     agent = DecisionSupportAgent(
         repositories=FakeRepositories(include_decision_support=True),
         decision_support_service=FakeDecisionSupportService(),
+        mcp_client=None,
         endpoint_config=OpenAICompatConfig(model="test-model", base_url="https://example.test/v1"),
     )
     result = agent.respond("INC-1", "What should I do next?", request_fn=request)
@@ -152,6 +160,7 @@ def test_agent_generates_decision_support_when_missing():
     agent = DecisionSupportAgent(
         repositories=FakeRepositories(include_decision_support=False),
         decision_support_service=ds_service,
+        mcp_client=None,
         endpoint_config=OpenAICompatConfig(model="test-model", base_url="https://example.test/v1"),
     )
     result = agent.respond("INC-2", "Summarize this incident.", request_fn=request)
@@ -171,6 +180,7 @@ def test_agent_rejects_finish_before_tool_use():
     agent = DecisionSupportAgent(
         repositories=FakeRepositories(include_decision_support=True),
         decision_support_service=FakeDecisionSupportService(),
+        mcp_client=None,
         endpoint_config=OpenAICompatConfig(model="test-model", base_url="https://example.test/v1"),
     )
     result = agent.respond("INC-3", "Assess the risk.", request_fn=request)
@@ -197,6 +207,26 @@ def test_recover_answer_after_loop_returns_grounded_finish():
 
     assert answer == "Use the stored recommendation."
     assert reasoning_trace[-1]["status"] == "finished_after_loop"
+
+
+def test_agent_can_load_mcp_cyber_context():
+    request = SequencedRequest(
+        [
+            json.dumps({"thought": "Need incident context first.", "action": "load_incident", "action_input": {}}),
+            json.dumps({"thought": "Need cyber context from MCP.", "action": "load_mcp_cyber_context", "action_input": {"query": "brute force login"}}),
+            json.dumps({"thought": "Enough context.", "action": "finish", "final_answer": "ATT&CK context loaded."}),
+        ]
+    )
+    agent = DecisionSupportAgent(
+        repositories=FakeRepositories(include_decision_support=True),
+        decision_support_service=FakeDecisionSupportService(),
+        mcp_client=FakeMcpClient(),
+        endpoint_config=OpenAICompatConfig(model="test-model", base_url="https://example.test/v1"),
+    )
+    result = agent.respond("INC-MCP", "What should I do next?", request_fn=request)
+    assert result["answer"] == "ATT&CK context loaded."
+    assert result["context_summary"]["has_mcp_cyber_context"] is True
+    assert result["reasoning_trace"][1]["action"] == "load_mcp_cyber_context"
 
 def test_load_agent_app_config_supports_openai_style_env_names():
     config = load_agent_app_config(
@@ -254,6 +284,7 @@ def test_query_incident_agent_supports_mock_mode(monkeypatch):
     fake_agent = DecisionSupportAgent(
         repositories=FakeRepositories(include_decision_support=True),
         decision_support_service=FakeDecisionSupportService(),
+        mcp_client=None,
         endpoint_config=OpenAICompatConfig(model="gpt-5.4", base_url="mock://local/v1"),
     )
 

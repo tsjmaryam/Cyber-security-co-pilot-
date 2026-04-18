@@ -72,6 +72,12 @@ To also start the MCP server:
 .\scripts\start_local.ps1 -IncludeMcpServer
 ```
 
+To install Node.js automatically and install `mcp_server` dependencies during startup:
+
+```powershell
+.\scripts\start_local.ps1 -IncludeMcpServer -InstallNodeJs -InstallNodeDeps
+```
+
 To stop the locally started services:
 
 ```powershell
@@ -199,6 +205,25 @@ The dedicated agent service supports two explicit auth modes:
   - no external model call
   - uses real incident context and decision-support data from Postgres
   - intended for demos, UI testing, and integration checks
+
+### Optional MCP cyber context
+
+The dedicated agent can optionally pull in ATT&CK-style cyber context from the MCP knowledge-base server as an additional tool.
+
+Enable it with:
+
+```powershell
+$env:AGENT_USE_MCP_CYBER_CONTEXT="1"
+```
+
+Requirements:
+- Node.js and `npm` must be installed
+- `mcp_server` dependencies must be installed
+- the MCP knowledge-base tables must exist in Postgres
+
+When enabled, the agent gains an additional tool that searches the MCP cyber knowledge base and can use the results as grounded context in its answer.
+
+If Node.js or the MCP runtime is unavailable, the agent falls back to direct Postgres knowledge-base search using the same KB tables.
 
 If `AGENT_AUTH_MODE` is omitted, the service defaults to `api_key` unless legacy `AGENT_USE_CODEX_AUTH` is set.
 

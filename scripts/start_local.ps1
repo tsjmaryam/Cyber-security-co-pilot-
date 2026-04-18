@@ -4,6 +4,7 @@ param(
     [int]$BackendPort = 8000,
     [int]$AgentPort = 8001,
     [switch]$IncludeMcpServer,
+    [switch]$InstallNodeJs,
     [switch]$InstallNodeDeps,
     [switch]$DryRun
 )
@@ -52,6 +53,8 @@ function Resolve-PythonExe {
 }
 
 function Resolve-NpmExe {
+    param([switch]$InstallNodeJs)
+
     $npmCommand = Get-Command npm.cmd -ErrorAction SilentlyContinue
     if ($null -ne $npmCommand) {
         return $npmCommand.Source
@@ -62,7 +65,43 @@ function Resolve-NpmExe {
         return $npmCommand.Source
     }
 
+    if ($InstallNodeJs) {
+        Install-NodeJs
+
+        $npmCommand = Get-Command npm.cmd -ErrorAction SilentlyContinue
+        if ($null -ne $npmCommand) {
+            return $npmCommand.Source
+        }
+
+        $npmCommand = Get-Command npm -ErrorAction SilentlyContinue
+        if ($null -ne $npmCommand) {
+            return $npmCommand.Source
+        }
+    }
+
     throw "npm was not found. Install Node.js or add npm to PATH."
+}
+
+function Install-NodeJs {
+    $wingetCommand = Get-Command winget -ErrorAction SilentlyContinue
+    if ($null -eq $wingetCommand) {
+        throw "Node.js is not installed and winget is unavailable. Install Node.js manually or add winget to PATH."
+    }
+
+    $arguments = @(
+        "install",
+        "--id", "OpenJS.NodeJS.LTS",
+        "--exact",
+        "--accept-package-agreements",
+        "--accept-source-agreements"
+    )
+
+    & $wingetCommand.Source $arguments
+
+    $machineNodeRoot = "C:\Program Files\nodejs"
+    if (Test-Path $machineNodeRoot) {
+        $env:PATH = "$machineNodeRoot;$env:PATH"
+    }
 }
 
 function Test-PythonModules {
@@ -219,13 +258,13 @@ else {
 }
 
 if ($IncludeMcpServer) {
-    $npmExe = Resolve-NpmExe
+    $npmExe = Resolve-NpmExe -InstallNodeJs:$InstallNodeJs
     $mcpRoot = Join-Path $repoRoot "mcp_server"
     $mcpStdOut = Join-Path $logRoot "mcp.stdout.log"
     $mcpStdErr = Join-Path $logRoot "mcp.stderr.log"
 
     if (-not (Test-Path (Join-Path $mcpRoot "node_modules"))) {
-        if ($InstallNodeDeps) {
+        if ($InstallNodeDeps -or $InstallNodeJs) {
             if (-not $DryRun) {
                 & $npmExe install --prefix $mcpRoot
             }
