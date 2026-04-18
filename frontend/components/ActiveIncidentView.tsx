@@ -119,7 +119,7 @@ export function ActiveIncidentView({
           </ul>
         </article>
 
-        <article className="card reveal reveal-delay-3">
+        <article className="card card--confidence reveal reveal-delay-3">
           <div className="card-heading">
             <span className="card-kicker">Confidence</span>
             <strong className="metric-value">{viewModel.confidence}%</strong>

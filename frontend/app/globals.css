@@ -385,6 +385,13 @@ button:hover {
   grid-column: span 5;
 }
 
+.dashboard-grid--app > .card--confidence {
+  grid-column: span 3;
+  padding: 18px;
+  align-self: start;
+  max-width: 320px;
+}
+
 .dashboard-grid--app > .card:nth-child(3),
 .dashboard-grid--app > .card:nth-child(4),
 .dashboard-grid--app > .card:nth-child(5) {
@@ -399,6 +406,28 @@ button:hover {
   font-size: 1.9rem;
   line-height: 1;
   letter-spacing: -0.04em;
+}
+
+.card--confidence .metric-value {
+  font-size: 1.32rem;
+}
+
+.card--confidence .card-heading {
+  gap: 8px;
+}
+
+.card--confidence .topbar-meta {
+  gap: 8px;
+}
+
+.card--confidence .status-pill {
+  padding: 6px 10px;
+  font-size: 0.68rem;
+}
+
+.card--confidence p {
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 
 .signal-list {
