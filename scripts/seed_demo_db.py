@@ -61,12 +61,13 @@ def main() -> int:
                 scenario_id = scenario_output["scenario_id"]
                 scenario = scenario_map[scenario_id]
                 incident_id = scenario_output["incident_id"]
+                initial_review = scenario_output["initial_review"]
                 summary = {
                     "title": scenario_output["title"],
                     "summary": scenario.purpose,
-                    "event_sequence": scenario_output["coverage_review"]["incident_summary"]["event_sequence"],
+                    "event_sequence": initial_review["coverage_review"]["incident_summary"]["event_sequence"],
                     "playbook_snippets": [scenario.title, scenario.purpose],
-                    "domain_terms": [{"title": label} for label in scenario_output["detector_output"]["detector_labels"]],
+                    "domain_terms": [{"title": label} for label in initial_review["detector_output"]["detector_labels"]],
                     "operator_context": {"operator_type": "non_expert"},
                 }
 
@@ -83,10 +84,10 @@ def main() -> int:
                         incident_id,
                         scenario_output["title"],
                         scenario.purpose,
-                        scenario_output["detector_output"]["risk_band"],
-                        json.dumps(scenario_output["coverage_review"]["incident_summary"]["primary_actor"] or {}),
-                        json.dumps(scenario_output["coverage_review"]["incident_summary"]["entities"] or {}),
-                        json.dumps(scenario_output["coverage_review"]["incident_summary"]["event_sequence"]),
+                        initial_review["detector_output"]["risk_band"],
+                        json.dumps(initial_review["coverage_review"]["incident_summary"]["primary_actor"] or {}),
+                        json.dumps(initial_review["coverage_review"]["incident_summary"]["entities"] or {}),
+                        json.dumps(initial_review["coverage_review"]["incident_summary"]["event_sequence"]),
                     ),
                 )
 
@@ -103,7 +104,7 @@ def main() -> int:
                     ),
                 )
 
-                detector_output = scenario_output["detector_output"]
+                detector_output = initial_review["detector_output"]
                 cur.execute(
                     """
                     INSERT INTO detector_results (
@@ -142,7 +143,7 @@ def main() -> int:
                     ),
                 )
 
-                decision_support = scenario_output["decision_support"]
+                decision_support = initial_review["decision_support"]
                 cur.execute(
                     """
                     INSERT INTO decision_support_results (

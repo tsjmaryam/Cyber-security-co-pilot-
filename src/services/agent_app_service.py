@@ -39,7 +39,7 @@ class AgentAppConfig:
 
 
 def load_agent_app_config(env: dict[str, str] | None = None) -> AgentAppConfig:
-    env = env or os.environ
+    env = os.environ if env is None else env
     model = _first_present(env, "OPENAI_MODEL", "LLM_MODEL", "AGENT_MODEL") or DEFAULT_AGENT_MODEL
     auth_mode = resolve_agent_auth_mode(env)
     base_url = _first_present(env, "OPENAI_BASE_URL", "OPENAI_API_BASE", "OPENAI_COMPAT_BASE_URL")
@@ -128,7 +128,7 @@ def query_incident_agent(
 
 
 def resolve_agent_auth_mode(env: dict[str, str] | None = None) -> AgentAuthMode:
-    env = env or os.environ
+    env = os.environ if env is None else env
     configured = env.get("AGENT_AUTH_MODE")
     if configured:
         normalized = configured.strip().lower()
@@ -145,7 +145,7 @@ def resolve_agent_auth_mode(env: dict[str, str] | None = None) -> AgentAuthMode:
 
 
 def resolve_agent_api_key(base_url: str, auth_mode: AgentAuthMode, env: dict[str, str] | None = None) -> str:
-    env = env or os.environ
+    env = os.environ if env is None else env
     if auth_mode == "mock":
         return "mock-token"
     if auth_mode == "api_key":
@@ -168,7 +168,7 @@ def resolve_agent_api_key(base_url: str, auth_mode: AgentAuthMode, env: dict[str
 
 
 def describe_agent_auth(env: dict[str, str] | None = None) -> dict[str, object]:
-    env = env or os.environ
+    env = os.environ if env is None else env
     auth_mode = resolve_agent_auth_mode(env)
     base_url = _first_present(env, "OPENAI_BASE_URL", "OPENAI_API_BASE", "OPENAI_COMPAT_BASE_URL")
     if auth_mode == "mock":
