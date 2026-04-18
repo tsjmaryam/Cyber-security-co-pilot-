@@ -60,9 +60,9 @@ export function ReportModal({
         ) : (
           <div className="report-preview">
             <div className="report-preview__meta">
-              <span>Issue #{asString(reportRecord.incident_id, "incident")}</span>
-              <span>{asString(reportRecord.severity, "Unknown")} priority</span>
-              <span>{asString(reportRecord.generated_at, "Recently")}</span>
+              <span className="report-meta-chip">Issue #{asString(reportRecord.incident_id, "incident")}</span>
+              <span className="report-meta-chip">{asString(reportRecord.severity, "Unknown")} priority</span>
+              <span className="report-meta-chip">{asString(reportRecord.generated_at, "Recently")}</span>
             </div>
 
             <section className="report-section">

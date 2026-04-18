@@ -126,6 +126,33 @@ export function buildReportPrintUrl(incidentId: string): string {
   return `${API_BASE_URL}/incidents/${incidentId}/report/latest/print`;
 }
 
+export async function downloadReportPdf(incidentId: string): Promise<void> {
+  const url = `${API_BASE_URL}/incidents/${incidentId}/report/latest/pdf`;
+  logApi("download_pdf_start", { url });
+  const response = await fetch(url, {
+    headers: { Accept: "application/pdf" },
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    let detail = response.statusText;
+    try {
+      const payload = (await response.json()) as { detail?: string };
+      detail = payload.detail ?? detail;
+    } catch {}
+    throw new ApiError(detail || "Could not download PDF.", response.status);
+  }
+  const blob = await response.blob();
+  const objectUrl = window.URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = `sentinel-report-${incidentId}.pdf`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.URL.revokeObjectURL(objectUrl);
+  logApi("download_pdf_success", { url });
+}
+
 export async function postAlternative(
   incidentId: string,
   payload: { action_id: string; rationale?: string; used_double_check?: boolean; actor?: RecordShape; policy_version?: string },

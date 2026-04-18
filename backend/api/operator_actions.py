@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 
 from backend.dependencies import as_http_exception, get_operator_decision_repositories, get_operator_decision_service
 from backend.models import AlternativeActionRequest, IncidentReportResponse, OperatorActionRequest, OperatorActionResponse, OperatorHistoryResponse
 from src.repositories.service_bundles import OperatorDecisionRepositoryBundle
+from src.services.incident_report_service import IncidentReportService
 from src.services.operator_decision_service import OperatorDecisionAppService
 
 router = APIRouter(prefix="/incidents/{incident_id}", tags=["operator-actions"])
@@ -44,6 +45,24 @@ def print_latest_report(
     if report is None:
         raise as_http_exception(ValueError(f"Report not found: {incident_id}"))
     return HTMLResponse(content=str(report["html_content"]))
+
+
+@router.get("/report/latest/pdf")
+def download_latest_report_pdf(
+    incident_id: str,
+    repositories: OperatorDecisionRepositoryBundle = Depends(get_operator_decision_repositories),
+) -> Response:
+    report = repositories.fetch_latest_incident_report(incident_id)
+    if report is None:
+        raise as_http_exception(ValueError(f"Report not found: {incident_id}"))
+    payload = report.get("summary_json", report)
+    pdf_bytes = IncidentReportService().render_pdf(payload)
+    filename = f"sentinel-report-{incident_id}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post("/approve", response_model=OperatorActionResponse)

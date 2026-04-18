@@ -6,7 +6,7 @@ import { ActiveIncidentView } from "@/components/ActiveIncidentView";
 import { AuditTrailView } from "@/components/AuditTrailView";
 import { QueuePanel } from "@/components/QueuePanel";
 import { ReportModal } from "@/components/ReportModal";
-import { ApiError, buildReportPrintUrl, getAgentAuth, listIncidents, loadIncidentWorkspace, postAgentQuery, postAlternative, postApprove, postDoubleCheck, postEscalate } from "@/lib/api";
+import { ApiError, downloadReportPdf, getAgentAuth, listIncidents, loadIncidentWorkspace, postAgentQuery, postAlternative, postApprove, postDoubleCheck, postEscalate } from "@/lib/api";
 import { buildIncidentViewModel, mapQueueItem } from "@/lib/view-model";
 import type { OperatorHistoryResponse, RecordShape } from "@/types/api";
 
@@ -183,6 +183,11 @@ export default function Home() {
 
   async function runAction(action: "approve" | "alternative" | "escalate" | "double-check") {
     if (!selectedIncidentId.startsWith("incident_")) return;
+    if (action === "approve" && !rationale.trim()) {
+      setIncidentError("Add a short explanation in 'Why are you taking this action?' before approving.");
+      setReportModalOpen(false);
+      return;
+    }
     setActionLoading(true);
     setActionMessage(null);
     setIncidentError(null);
@@ -262,9 +267,13 @@ export default function Home() {
     }
   }
 
-  function handlePrintReport() {
+  async function handlePrintReport() {
     if (!selectedIncidentId.startsWith("incident_")) return;
-    window.open(buildReportPrintUrl(selectedIncidentId), "_blank", "noopener,noreferrer");
+    try {
+      await downloadReportPdf(selectedIncidentId);
+    } catch (error) {
+      setReportError(error instanceof ApiError ? error.message : "Could not download the PDF report.");
+    }
   }
 
   return (

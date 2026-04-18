@@ -55,6 +55,7 @@ export function ActiveIncidentView({
   const [openSignal, setOpenSignal] = useState<string | null>(null);
   const [openRawLog, setOpenRawLog] = useState<string | null>(null);
   const isExpert = viewMode === "expert";
+  const canApprove = Boolean(rationale.trim()) && !actionLoading;
 
   if (!isExpert) {
     return (
@@ -188,7 +189,7 @@ export function ActiveIncidentView({
               placeholder="Record the human reasoning in plain language."
             />
             <div className="action-grid">
-              <button className="cta cta--primary" disabled={actionLoading} onClick={onApprove} type="button">
+              <button className="cta cta--primary" disabled={!canApprove} onClick={onApprove} type="button">
                 Approve recommendation
               </button>
               <button className="cta cta--secondary" disabled={actionLoading || !selectedAlternativeId} onClick={onAlternative} type="button">
@@ -432,9 +433,9 @@ export function ActiveIncidentView({
             placeholder="Record why you are taking this action."
           />
           <div className="action-grid">
-            <button className="cta cta--primary" disabled={actionLoading} onClick={onApprove} type="button">
-              Approve recommendation
-            </button>
+              <button className="cta cta--primary" disabled={!canApprove} onClick={onApprove} type="button">
+                Approve recommendation
+              </button>
             <button className="cta cta--secondary" disabled={actionLoading || !selectedAlternativeId} onClick={onAlternative} type="button">
               Choose selected alternative
             </button>

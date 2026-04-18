@@ -18,6 +18,7 @@ from src.services.alerting_service import AlertingService, ResendConfig
 from src.services.coverage_review_service import CoverageReviewAppService
 from src.services.decision_support_app_service import DecisionSupportAppService
 from src.services.incident_report_service import IncidentReportService
+from src.services.llm_report_service import LlmReportService
 from src.services.operator_decision_service import OperatorDecisionAppService
 
 from .knowledge_base import KnowledgeBaseRepository
@@ -62,7 +63,7 @@ def get_operator_decision_service() -> OperatorDecisionAppService:
     return OperatorDecisionAppService(
         repositories=repos,
         coverage_review_service=coverage_review_service,
-        incident_report_service=IncidentReportService(),
+        incident_report_service=IncidentReportService(llm_report_service=get_llm_report_service()),
     )
 
 
@@ -83,6 +84,12 @@ def get_alerting_service() -> AlertingService:
     env = get_backend_env()
     repos = DecisionSupportRepositoryBundle.from_connection_factory(get_connection_factory())
     return AlertingService(repositories=repos, config=ResendConfig.from_env(env))
+
+
+@lru_cache(maxsize=1)
+def get_llm_report_service() -> LlmReportService | None:
+    env = get_backend_env()
+    return LlmReportService.from_env(env)
 
 
 def as_http_exception(exc: ValueError) -> HTTPException:

@@ -557,6 +557,16 @@ button:hover {
 .report-preview__meta {
   flex-wrap: wrap;
   justify-content: flex-start;
+  gap: 10px;
+}
+
+.report-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(18, 32, 51, 0.08);
   color: #546678;
   font-family: var(--font-ibm-plex-mono), monospace;
   font-size: 0.76rem;
