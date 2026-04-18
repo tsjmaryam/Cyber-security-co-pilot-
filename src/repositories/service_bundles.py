@@ -40,6 +40,9 @@ class DecisionSupportRepositoryBundle:
     def list_incidents(self, limit: int = 25):
         return self.incidents_repo.list_incidents(limit)
 
+    def list_recent_high_severity_incidents(self, lookback_hours: int = 1, limit: int = 100):
+        return self.incidents_repo.list_recent_high_severity_incidents(lookback_hours, limit)
+
     def fetch_latest_evidence_package(self, incident_id: str):
         return self.evidence_repo.fetch_latest_evidence_package(incident_id)
 
@@ -86,6 +89,9 @@ class CoverageReviewRepositoryBundle:
 
     def list_incidents(self, limit: int = 25):
         return self.incidents_repo.list_incidents(limit)
+
+    def list_recent_high_severity_incidents(self, lookback_hours: int = 1, limit: int = 100):
+        return self.incidents_repo.list_recent_high_severity_incidents(lookback_hours, limit)
 
     def fetch_latest_evidence_package(self, incident_id: str):
         return self.evidence_repo.fetch_latest_evidence_package(incident_id)
@@ -145,6 +151,9 @@ class AgentRepositoryBundle:
 
     def list_incidents(self, limit: int = 25):
         return self.incidents_repo.list_incidents(limit)
+
+    def list_recent_high_severity_incidents(self, lookback_hours: int = 1, limit: int = 100):
+        return self.incidents_repo.list_recent_high_severity_incidents(lookback_hours, limit)
 
     def fetch_latest_evidence_package(self, incident_id: str):
         return self.evidence_repo.fetch_latest_evidence_package(incident_id)
