@@ -45,3 +45,6 @@ class PostgresRepositoryBundle:
 
     def save_decision_support_result(self, incident_id: str, result: dict, policy_version: str | None):
         self.decision_support_repo.save_decision_support_result(incident_id, result, policy_version)
+
+    def fetch_latest_decision_support_result(self, incident_id: str):
+        return self.decision_support_repo.fetch_latest_decision_support_result(incident_id)

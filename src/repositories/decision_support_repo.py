@@ -24,3 +24,17 @@ class DecisionSupportResultsRepository:
             with conn.cursor() as cur:
                 cur.execute(query, params)
             conn.commit()
+
+    def fetch_latest_decision_support_result(self, incident_id: str) -> dict[str, Any] | None:
+        query = """
+        SELECT incident_id, result_json, validation_json, llm_trace_json, policy_version, created_at
+        FROM decision_support_results
+        WHERE incident_id = %s
+        ORDER BY created_at DESC, decision_support_result_id DESC
+        LIMIT 1
+        """
+        with self._connection_factory() as conn:
+            with conn.cursor() as cur:
+                cur.execute(query, (incident_id,))
+                row = cur.fetchone()
+                return dict(row) if row is not None else None

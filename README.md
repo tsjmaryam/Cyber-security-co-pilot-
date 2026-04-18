@@ -36,6 +36,33 @@ python -c "from src.decision_support_bridge import generate_decision_support_for
 
 To use the Postgres-ready application layer, create the schema from [`src/db/schema.sql`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/src/db/schema.sql), store incident context, evidence packages, detector results, coverage assessments, and policy snapshots, then call the app service around the pure `decision_support` package.
 
+To query the new model-agnostic agent against a Postgres-backed incident using any OpenAI-compatible chat endpoint:
+
+```bash
+python -c "from src.services.agent_app_service import query_incident_agent; import json; print(json.dumps(query_incident_agent('incident_000000001', 'What should I do next?', env={'POSTGRES_DSN':'postgresql://user:pass@localhost:5432/cyber', 'OPENAI_MODEL':'gpt-4.1-mini', 'OPENAI_BASE_URL':'https://your-endpoint.example/v1', 'OPENAI_API_KEY':'token'}), indent=2))"
+```
+
+The agent is model-agnostic at the application boundary and now uses a bounded ReAct loop:
+- it loads incident context, evidence packages, detector outputs, coverage state, and prior decision-support results from Postgres
+- it lets the model choose among grounded tools such as `load_incident`, `load_detector_result`, `load_coverage_assessment`, `load_decision_support`, and `generate_decision_support`
+- it generates decision support on demand if the database does not already have one
+- it sends a standard OpenAI-style `chat/completions` request to the configured endpoint
+- it limits reasoning to `AGENT_MAX_REASONING_STEPS` to keep execution bounded and auditable
+
+For local testing, the agent can also reuse the Codex desktop auth token instead of a normal API key:
+
+```powershell
+$env:OPENAI_BASE_URL="https://api.openai.com/v1"
+$env:OPENAI_MODEL="gpt-4.1-mini"
+$env:AGENT_USE_CODEX_AUTH="1"
+```
+
+Notes:
+- this reads the access token from `~/.codex/auth.json`
+- it is intended for local testing only
+- it is only supported against `https://api.openai.com/v1`
+- for any other OpenAI-compatible endpoint, set `OPENAI_API_KEY` normally
+
 Default config lives in `configs/pipeline_config.yaml` and behavioral flag rules live in `configs/event_flag_rules.yaml`.
 
 ## Outputs
@@ -73,5 +100,7 @@ Default config lives in `configs/pipeline_config.yaml` and behavioral flag rules
 - `src/db/`: Postgres connection utilities and starter schema
 - `src/repositories/`: Postgres repository layer for incident context, evidence packages, detector outputs, policy snapshots, and saved decision-support results
 - `src/services/decision_support_app_service.py`: application service that assembles DB records into the pure decision-support inputs
+- `src/agent/`: model-agnostic ReAct agent module that grounds chat responses in Postgres-backed context and decision-support outputs
+- `src/services/agent_app_service.py`: application factory and convenience entrypoint for OpenAI-compatible incident queries
 - `decision_support/`: standalone package for deterministic non-expert decision guidance
 - `notebooks/sanity_checks.ipynb`: starter notebook for quick inspection
