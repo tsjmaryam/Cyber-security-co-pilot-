@@ -16,6 +16,7 @@ from .demo_stream import DemoScenario, build_demo_scenarios, write_demo_stream
 from .derive_features import derive_event_features, load_flag_rules
 from .ingest import ingest_records
 from .logging_utils import configure_logging, get_logger
+from .network_sample import build_network_evidence_package
 from .normalize import normalize_records
 from .services.coverage_review_service import build_coverage_review
 from .weak_label import apply_weak_labels, load_label_rules
@@ -29,6 +30,7 @@ def run_demo_pipeline(
     batch_size: int = 1,
     incident_gap_minutes: int = 15,
     ordered_sequence_limit: int = 25,
+    network_sample_dir: str | Path = "data/raw/cse-cic-ids2018-sample",
 ) -> dict[str, Any]:
     root = _resolve_project_root(project_root)
     output_root = _resolve_output_dir(root, output_dir)
@@ -70,6 +72,7 @@ def run_demo_pipeline(
     incidents_labeled, label_report = apply_weak_labels(incidents, label_rules)
     logger.info("Demo weak labeling complete incidents=%s positives=%s", len(incidents_labeled), int(incidents_labeled["weak_label_suspicious"].sum()))
     policy = yaml.safe_load((root / "configs" / "decision_policy.yaml").read_text(encoding="utf-8")) or {}
+    network_evidence_package = build_network_evidence_package(root / network_sample_dir)
 
     scenario_outputs = []
     for scenario in scenarios:
@@ -88,6 +91,12 @@ def run_demo_pipeline(
             },
             operator_context={"operator_type": "non_expert"},
         )
+        evidence_record = _build_evidence_record(
+            incident_row=incident_row,
+            scenario=scenario,
+            network_evidence_package=network_evidence_package,
+            review_mode="initial",
+        )
         coverage_review = build_coverage_review(
             incident_record={
                 "incident_id": incident_row["incident_id"],
@@ -97,14 +106,7 @@ def run_demo_pipeline(
                 "entities": {"primary_source_ip_address": incident_row["primary_source_ip_address"]},
                 "event_sequence": str(incident_row["ordered_event_name_sequence"]).split("|"),
             },
-            evidence_record={
-                "summary_json": {
-                    "title": scenario.title,
-                    "summary": scenario.purpose,
-                    "event_sequence": str(incident_row["ordered_event_name_sequence"]).split("|"),
-                    "operator_context": {"operator_type": "non_expert"},
-                }
-            },
+            evidence_record=evidence_record,
             detector_record={
                 "risk_score": detector_output["risk_score"],
                 "risk_band": detector_output["risk_band"],
@@ -142,6 +144,12 @@ def run_demo_pipeline(
                 },
                 operator_context={"operator_type": "non_expert", "review_mode": "double_check"},
             )
+            double_check_evidence_record = _build_evidence_record(
+                incident_row=incident_row,
+                scenario=scenario,
+                network_evidence_package=network_evidence_package,
+                review_mode="double_check",
+            )
             double_check_coverage_review = build_coverage_review(
                 incident_record={
                     "incident_id": incident_row["incident_id"],
@@ -151,15 +159,7 @@ def run_demo_pipeline(
                     "entities": {"primary_source_ip_address": incident_row["primary_source_ip_address"]},
                     "event_sequence": str(incident_row["ordered_event_name_sequence"]).split("|"),
                 },
-                evidence_record={
-                    "summary_json": {
-                        "title": scenario.title,
-                        "summary": scenario.purpose,
-                        "event_sequence": str(incident_row["ordered_event_name_sequence"]).split("|"),
-                        "operator_context": {"operator_type": "non_expert", "review_mode": "double_check"},
-                        "double_check_summary": scenario.double_check_plan.get("summary"),
-                    }
-                },
+                evidence_record=double_check_evidence_record,
                 detector_record={
                     "risk_score": double_check_detector_output["risk_score"],
                     "risk_band": double_check_detector_output["risk_band"],
@@ -184,6 +184,7 @@ def run_demo_pipeline(
                 "decision_changed": decision_changed,
                 "detector_output": double_check_detector_output,
                 "decision_support": double_check_decision_support,
+                "network_evidence": _build_network_review_summary(network_evidence_package, reviewed=True),
                 "coverage_review": double_check_coverage_review,
             }
         scenario_outputs.append(
@@ -197,6 +198,7 @@ def run_demo_pipeline(
                 "decision_changed_after_double_check": decision_changed,
                 "initial_review": initial_review,
                 "double_check_review": double_check_review,
+                "network_evidence": _build_network_review_summary(network_evidence_package, reviewed=False),
             }
         )
         logger.debug("Scenario output assembled scenario_id=%s incident_id=%s", scenario.scenario_id, incident_row["incident_id"])
@@ -220,6 +222,7 @@ def run_demo_pipeline(
         "event_count": int(len(events)),
         "incident_count": int(len(incidents)),
         "label_report": label_report,
+        "network_evidence_package": network_evidence_package,
         "scenario_outputs": scenario_outputs,
     }
     (reports_root / "demo_run_report.json").write_text(json.dumps(_jsonable(report), indent=2), encoding="utf-8")
@@ -291,6 +294,51 @@ def _build_coverage_from_scenario(scenario: DemoScenario) -> dict[str, Any]:
         "checks": list(plan.get("checks") or []),
         "missing_sources": list(plan.get("missing_sources") or []),
     }
+
+
+def _build_evidence_record(
+    incident_row: pd.Series,
+    scenario: DemoScenario,
+    network_evidence_package: dict[str, Any] | None,
+    review_mode: str,
+) -> dict[str, Any]:
+    summary_json: dict[str, Any] = {
+        "title": scenario.title,
+        "summary": scenario.purpose,
+        "event_sequence": str(incident_row["ordered_event_name_sequence"]).split("|"),
+        "operator_context": {"operator_type": "non_expert", "review_mode": review_mode},
+    }
+    if scenario.double_check_plan and review_mode == "double_check":
+        summary_json["double_check_summary"] = scenario.double_check_plan.get("summary")
+    network_summary = None
+    if "network" in scenario.coverage_categories:
+        network_summary = _build_network_review_summary(
+            network_evidence_package,
+            reviewed=bool(review_mode == "double_check"),
+        )
+    if network_summary is not None:
+        summary_json["network_evidence"] = network_summary
+    return {"summary_json": summary_json}
+
+
+def _build_network_review_summary(
+    network_evidence_package: dict[str, Any] | None,
+    *,
+    reviewed: bool,
+) -> dict[str, Any] | None:
+    if network_evidence_package is None:
+        return None
+    summary = {
+        "status": "reviewed" if reviewed else "available_not_reviewed",
+        "dataset": network_evidence_package["dataset"],
+        "file_count": network_evidence_package["file_count"],
+        "suspicious_flow_count": network_evidence_package["suspicious_flow_count"],
+        "suspicious_ratio": network_evidence_package["suspicious_ratio"],
+        "top_suspicious_labels": list(network_evidence_package.get("top_suspicious_labels") or []),
+    }
+    if reviewed:
+        summary["suspicious_flow_examples"] = list(network_evidence_package.get("suspicious_flow_examples") or [])
+    return summary
 
 
 def _apply_double_check_detector_overrides(detector_output: dict[str, Any], plan: dict[str, Any]) -> dict[str, Any]:
