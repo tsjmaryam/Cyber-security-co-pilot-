@@ -10,6 +10,12 @@ From the project root:
 python -m src.main --project-root .
 ```
 
+To increase log detail during integration/debugging:
+
+```bash
+LOG_LEVEL=DEBUG python -m src.main --project-root .
+```
+
 To generate the purpose-doc demo stream with synthetic CloudTrail batches for the blind-spot scenarios:
 
 ```bash

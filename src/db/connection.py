@@ -5,6 +5,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from src.logging_utils import get_logger
+
+logger = get_logger(__name__)
+
 
 @dataclass
 class PostgresConfig:
@@ -50,6 +54,7 @@ def create_connection(config: PostgresConfig):
     except ModuleNotFoundError as exc:  # pragma: no cover - import guard
         raise RuntimeError("psycopg is required for Postgres-backed application services.") from exc
     kwargs = config.as_connection_kwargs()
+    logger.debug("Creating Postgres connection using_dsn=%s host=%s dbname=%s", "conninfo" in kwargs, config.host, config.dbname)
     if "conninfo" in kwargs:
         return psycopg.connect(kwargs["conninfo"], row_factory=dict_row)
     return psycopg.connect(row_factory=dict_row, **kwargs)

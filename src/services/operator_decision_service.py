@@ -3,7 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from src.logging_utils import get_logger
 from .coverage_review_service import CoverageReviewAppService
+
+logger = get_logger(__name__)
 
 
 class OperatorDecisionRepositoryBundle(Protocol):
@@ -25,6 +28,7 @@ class OperatorDecisionAppService:
         policy_version: str | None = None,
         used_double_check: bool = False,
     ) -> dict[str, Any]:
+        logger.info("Recording operator approval incident_id=%s used_double_check=%s", incident_id, used_double_check)
         review = self.coverage_review_service.build_for_incident(incident_id, policy_version=policy_version)
         recommended = dict(review["recommended_action"])
         self.repositories.save_operator_decision(
@@ -55,6 +59,7 @@ class OperatorDecisionAppService:
         policy_version: str | None = None,
         used_double_check: bool = False,
     ) -> dict[str, Any]:
+        logger.info("Recording alternative choice incident_id=%s action_id=%s used_double_check=%s", incident_id, action_id, used_double_check)
         review = self.coverage_review_service.build_for_incident(incident_id, policy_version=policy_version)
         alternative = _select_action(review["alternative_actions"], action_id)
         if alternative is None:
@@ -86,6 +91,7 @@ class OperatorDecisionAppService:
         policy_version: str | None = None,
         used_double_check: bool = False,
     ) -> dict[str, Any]:
+        logger.info("Recording escalation incident_id=%s used_double_check=%s", incident_id, used_double_check)
         review = self.coverage_review_service.build_for_incident(incident_id, policy_version=policy_version)
         escalation_action = _select_action(review["alternative_actions"], "escalate_to_expert") or {
             "action_id": "escalate_to_expert",
@@ -118,6 +124,7 @@ class OperatorDecisionAppService:
         policy_version: str | None = None,
         used_double_check: bool = True,
     ) -> dict[str, Any]:
+        logger.info("Recording more-analysis request incident_id=%s", incident_id)
         review = self.coverage_review_service.build_for_incident(incident_id, policy_version=policy_version)
         payload = {
             "coverage_review": review,

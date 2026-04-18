@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
+from src.logging_utils import get_logger
 from .openai_compat import OpenAICompatConfig, create_chat_completion, extract_text_content
 from .react import build_correction_message, build_observation_message, build_react_messages, parse_react_step
 from .tools import AgentRuntimeState
 from .context import AgentRepositoryBundle
+
+logger = get_logger(__name__)
 
 
 class DecisionSupportGenerator(Protocol):
@@ -27,6 +30,7 @@ class DecisionSupportAgent:
         policy_version: str | None = None,
         request_fn=None,
     ) -> dict[str, Any]:
+        logger.info("Starting agent response incident_id=%s model=%s", incident_id, self.endpoint_config.model)
         runtime = AgentRuntimeState(
             repositories=self.repositories,
             decision_support_service=self.decision_support_service,
@@ -44,6 +48,7 @@ class DecisionSupportAgent:
         last_response: dict[str, Any] | None = None
 
         for step_index in range(1, self.max_reasoning_steps + 1):
+            logger.debug("Agent step start incident_id=%s step=%s", incident_id, step_index)
             response = create_chat_completion(
                 self.endpoint_config,
                 messages,
@@ -58,15 +63,18 @@ class DecisionSupportAgent:
                 "action": react_step.action,
             }
             reasoning_trace.append(trace_item)
+            logger.debug("Agent parsed step incident_id=%s step=%s action=%s", incident_id, step_index, react_step.action)
 
             if react_step.action == "finish":
                 if not any(runtime.context_summary().values()):
                     messages.append({"role": "assistant", "content": react_step.raw_content})
                     messages.append({"role": "user", "content": build_correction_message("You must use at least one tool before finishing.")})
                     trace_item["status"] = "rejected"
+                    logger.warning("Agent attempted to finish before loading context incident_id=%s step=%s", incident_id, step_index)
                     continue
                 answer = react_step.final_answer or react_step.raw_content.strip()
                 trace_item["status"] = "finished"
+                logger.info("Agent finished incident_id=%s step=%s source=%s", incident_id, step_index, runtime.decision_support_source)
                 break
 
             tool = tools.get(react_step.action)
@@ -74,6 +82,7 @@ class DecisionSupportAgent:
                 messages.append({"role": "assistant", "content": react_step.raw_content})
                 messages.append({"role": "user", "content": build_correction_message(f"Unknown tool `{react_step.action}`.")})
                 trace_item["status"] = "unknown_tool"
+                logger.warning("Agent requested unknown tool incident_id=%s step=%s tool=%s", incident_id, step_index, react_step.action)
                 continue
 
             try:
@@ -81,15 +90,19 @@ class DecisionSupportAgent:
             except Exception as exc:
                 observation = {"error": str(exc)}
                 trace_item["status"] = "tool_error"
+                logger.exception("Agent tool failed incident_id=%s step=%s tool=%s", incident_id, step_index, tool.name)
             else:
                 trace_item["status"] = "observed"
+                logger.debug("Agent tool succeeded incident_id=%s step=%s tool=%s", incident_id, step_index, tool.name)
             trace_item["observation"] = observation
             messages.append({"role": "assistant", "content": react_step.raw_content})
             messages.append({"role": "user", "content": build_observation_message(tool.name, observation)})
 
         if answer is None:
+            logger.error("Agent failed to finish incident_id=%s max_steps=%s", incident_id, self.max_reasoning_steps)
             raise RuntimeError(f"Agent did not finish within {self.max_reasoning_steps} reasoning steps.")
 
+        logger.info("Agent response ready incident_id=%s steps=%s", incident_id, len(reasoning_trace))
         return {
             "incident_id": incident_id,
             "user_query": user_query,

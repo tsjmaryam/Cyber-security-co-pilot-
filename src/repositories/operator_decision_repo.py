@@ -3,6 +3,10 @@ from __future__ import annotations
 import json
 from typing import Any, Callable
 
+from src.logging_utils import get_logger
+
+logger = get_logger(__name__)
+
 
 class OperatorDecisionRepository:
     def __init__(self, connection_factory: Callable[[], Any]):
@@ -21,6 +25,7 @@ class OperatorDecisionRepository:
         coverage_review: dict[str, Any],
         decision_support_result: dict[str, Any] | None,
     ) -> None:
+        logger.info("Persisting operator decision incident_id=%s decision_type=%s chosen_action_id=%s", incident_id, decision_type, chosen_action_id)
         query = """
         INSERT INTO operator_decisions (
             incident_id, decision_type, selected_from, chosen_action_id, chosen_action_label,
@@ -52,6 +57,7 @@ class OperatorDecisionRepository:
         payload: dict[str, Any],
         actor: dict[str, Any] | None = None,
     ) -> None:
+        logger.info("Persisting review event incident_id=%s event_type=%s", incident_id, event_type)
         query = """
         INSERT INTO decision_review_events (incident_id, event_type, actor_json, payload_json)
         VALUES (%s, %s, %s::jsonb, %s::jsonb)
@@ -68,6 +74,7 @@ class OperatorDecisionRepository:
             conn.commit()
 
     def fetch_latest_operator_decision(self, incident_id: str) -> dict[str, Any] | None:
+        logger.debug("Fetching latest operator decision incident_id=%s", incident_id)
         query = """
         SELECT incident_id, decision_type, selected_from, chosen_action_id, chosen_action_label, rationale,
                used_double_check, actor_json, coverage_review_json, decision_support_result_json, created_at
@@ -80,4 +87,5 @@ class OperatorDecisionRepository:
             with conn.cursor() as cur:
                 cur.execute(query, (incident_id,))
                 row = cur.fetchone()
+                logger.debug("Operator decision query finished incident_id=%s found=%s", incident_id, row is not None)
                 return dict(row) if row is not None else None

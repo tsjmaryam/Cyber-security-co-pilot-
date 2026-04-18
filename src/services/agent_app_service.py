@@ -3,12 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 
+from src.logging_utils import get_logger
 from src.agent.auth import load_codex_access_token, should_use_codex_auth, validate_codex_auth_base_url
 from src.agent.openai_compat import OpenAICompatConfig
 from src.agent.service import DecisionSupportAgent
 from src.db.connection import create_connection, load_postgres_config
 from src.repositories.service_bundles import AgentRepositoryBundle, DecisionSupportRepositoryBundle
 from src.services.decision_support_app_service import DecisionSupportAppService
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -34,6 +37,7 @@ def load_agent_app_config(env: dict[str, str] | None = None) -> AgentAppConfig:
     if api_key is None and should_use_codex_auth(env):
         validate_codex_auth_base_url(base_url)
         api_key = load_codex_access_token(env)
+        logger.info("Loaded agent API key from Codex auth fallback")
     return AgentAppConfig(
         model=model,
         base_url=base_url,
@@ -46,6 +50,7 @@ def load_agent_app_config(env: dict[str, str] | None = None) -> AgentAppConfig:
 
 
 def build_postgres_backed_agent(config: AgentAppConfig, env: dict[str, str] | None = None) -> DecisionSupportAgent:
+    logger.info("Building Postgres-backed agent model=%s base_url=%s", config.model, config.base_url)
     pg_config = load_postgres_config(env)
 
     def connection_factory():
@@ -79,6 +84,7 @@ def query_incident_agent(
     request_fn=None,
 ) -> dict:
     resolved_config = config or load_agent_app_config(env)
+    logger.info("Querying incident agent incident_id=%s model=%s", incident_id, resolved_config.model)
     agent = build_postgres_backed_agent(resolved_config, env=env)
     return agent.respond(
         incident_id=incident_id,

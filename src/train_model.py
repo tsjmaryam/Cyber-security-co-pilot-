@@ -17,6 +17,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.preprocessing import FunctionTransformer
 
+from .logging_utils import configure_logging, get_logger
 from .weak_label import apply_weak_labels, load_label_rules
 
 
@@ -60,6 +61,8 @@ CATEGORICAL_FEATURES = [
     "top_event_name",
 ]
 
+logger = get_logger(__name__)
+
 
 def _boolean_to_float(values):
     return values.astype(float)
@@ -81,10 +84,13 @@ def main() -> int:
     parser.add_argument("--artifacts-dir", default="artifacts", help="Artifact output directory relative to project root.")
     args = parser.parse_args()
 
+    configure_logging()
     project_root = Path(args.project_root).resolve()
+    logger.info("Starting training run project_root=%s input=%s", project_root, args.input_incidents)
     incidents = pd.read_parquet(project_root / args.input_incidents)
     rules = load_label_rules(project_root / args.label_rules)
     labeled, label_report = apply_weak_labels(incidents, rules)
+    logger.info("Weak labeling complete incidents=%s positives=%s", len(labeled), int(labeled["weak_label_suspicious"].sum()))
 
     processed_root = project_root / "data" / "processed"
     reports_root = project_root / "reports"
@@ -98,6 +104,7 @@ def main() -> int:
     (reports_root / "incident_label_report.json").write_text(json.dumps(label_report, indent=2), encoding="utf-8")
 
     model_report, scored = train_incident_model(labeled, artifacts_root / "incident_suspicion_model.joblib")
+    logger.info("Model training complete scored_rows=%s artifact=%s", len(scored), artifacts_root / "incident_suspicion_model.joblib")
     scored.to_parquet(processed_root / "incidents_scored.parquet", index=False)
     scored.head(100000).to_csv(processed_root / "incidents_scored_sample.csv", index=False)
     (reports_root / "incident_model_report.json").write_text(json.dumps(model_report, indent=2), encoding="utf-8")
@@ -112,6 +119,7 @@ def main() -> int:
 
 
 def train_incident_model(labeled: pd.DataFrame, artifact_path: Path) -> tuple[dict[str, Any], pd.DataFrame]:
+    logger.info("Preparing training matrix rows=%s", len(labeled))
     X = labeled[NUMERIC_FEATURES + BOOLEAN_FEATURES + CATEGORICAL_FEATURES].copy()
     y = labeled["weak_label_suspicious"].astype(int)
 
@@ -122,6 +130,7 @@ def train_incident_model(labeled: pd.DataFrame, artifact_path: Path) -> tuple[di
         random_state=42,
         stratify=y if y.nunique() > 1 else None,
     )
+    logger.info("Split train_rows=%s test_rows=%s positive_rate=%.4f", len(X_train), len(X_test), float(y.mean()))
 
     numeric_transformer = Pipeline(
         steps=[
@@ -166,6 +175,7 @@ def train_incident_model(labeled: pd.DataFrame, artifact_path: Path) -> tuple[di
         ]
     )
     model.fit(X_train, y_train)
+    logger.info("Baseline model fit complete")
 
     train_proba = model.predict_proba(X_train)[:, 1]
     test_proba = model.predict_proba(X_test)[:, 1]
@@ -180,6 +190,7 @@ def train_incident_model(labeled: pd.DataFrame, artifact_path: Path) -> tuple[di
         "label_column": "weak_label_suspicious",
     }
     joblib.dump(model_payload, artifact_path)
+    logger.info("Model artifact written path=%s", artifact_path)
 
     top_coefficients = extract_top_coefficients(model, top_n=25)
     report = {
@@ -194,6 +205,7 @@ def train_incident_model(labeled: pd.DataFrame, artifact_path: Path) -> tuple[di
         "top_positive_coefficients": top_coefficients["positive"],
         "top_negative_coefficients": top_coefficients["negative"],
     }
+    logger.debug("Model metrics roc_auc_test=%s average_precision_test=%s", report["roc_auc_test"], report["average_precision_test"])
     return _jsonable(report), scored_all
 
 

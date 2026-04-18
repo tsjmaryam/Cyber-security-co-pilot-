@@ -3,7 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from src.logging_utils import get_logger
 from src.services.dtos import CoverageRecordDTO, DecisionSupportPayloadDTO, DetectorRecordDTO, EvidenceRecordDTO, IncidentRecordDTO
+
+logger = get_logger(__name__)
 
 
 class AgentRepositoryBundle(Protocol):
@@ -24,6 +27,7 @@ class AgentContextBundle:
 
 
 def load_agent_context(repositories: AgentRepositoryBundle, incident_id: str) -> AgentContextBundle:
+    logger.info("Loading agent context incident_id=%s", incident_id)
     incident = repositories.fetch_incident(incident_id)
     if incident is None:
         raise ValueError(f"Incident not found: {incident_id}")

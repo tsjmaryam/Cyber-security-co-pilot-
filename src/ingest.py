@@ -8,9 +8,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Generator, Iterable
 
+from .logging_utils import get_logger
+
 
 SUPPORTED_SUFFIXES = (".json", ".json.gz", ".gz")
 SUPPORTED_ARCHIVES = (".tar", ".tar.gz", ".tgz")
+logger = get_logger(__name__)
 
 
 @dataclass(slots=True)
@@ -57,21 +60,33 @@ def ingest_records(input_path: str | Path) -> tuple[list[RawRecord], IngestMetri
     path = Path(input_path)
     metrics = IngestMetrics()
     records: list[RawRecord] = []
+    logger.info("Scanning ingest input path=%s", path)
     for source_path in iter_input_sources(path):
         try:
+            logger.debug("Reading source path=%s", source_path)
             for item in _read_source(source_path, metrics):
                 records.append(item)
                 metrics.total_records_parsed += 1
         except Exception as exc:  # pragma: no cover
             metrics.add_file_error(str(source_path), type(exc).__name__)
+            logger.warning("Failed to ingest source path=%s error=%s", source_path, type(exc).__name__)
+    logger.info(
+        "Ingest finished files=%s records=%s malformed_files=%s malformed_records=%s",
+        metrics.total_files_read,
+        metrics.total_records_parsed,
+        metrics.total_malformed_files,
+        metrics.total_malformed_records,
+    )
     return records, metrics
 
 
 def _read_source(source_path: Path, metrics: IngestMetrics) -> Generator[RawRecord, None, None]:
     if _is_archive_path(source_path):
+        logger.debug("Reading archive source=%s", source_path)
         yield from _read_archive(source_path, metrics)
         return
     metrics.total_files_read += 1
+    logger.debug("Reading CloudTrail file source=%s", source_path)
     yield from _read_cloudtrail_file(
         source_label=str(source_path),
         source_file_name=source_path.name,
@@ -82,15 +97,18 @@ def _read_source(source_path: Path, metrics: IngestMetrics) -> Generator[RawReco
 
 def _read_archive(source_path: Path, metrics: IngestMetrics) -> Generator[RawRecord, None, None]:
     mode = "r:gz" if str(source_path).endswith((".tar.gz", ".tgz")) else "r"
+    logger.info("Opening archive source=%s mode=%s", source_path, mode)
     with tarfile.open(source_path, mode) as archive:
         for member in archive.getmembers():
             if not member.isfile() or not _is_supported_name(member.name):
                 continue
             try:
                 metrics.total_files_read += 1
+                logger.debug("Reading archive member source=%s member=%s", source_path, member.name)
                 extracted = archive.extractfile(member)
                 if extracted is None:
                     metrics.add_file_error(f"{source_path}::{member.name}", "EmptyArchiveMember")
+                    logger.warning("Archive member was empty source=%s member=%s", source_path, member.name)
                     continue
                 yield from _read_cloudtrail_file(
                     source_label=f"{source_path}::{member.name}",
@@ -100,6 +118,7 @@ def _read_archive(source_path: Path, metrics: IngestMetrics) -> Generator[RawRec
                 )
             except Exception as exc:
                 metrics.add_file_error(f"{source_path}::{member.name}", type(exc).__name__)
+                logger.warning("Failed archive member source=%s member=%s error=%s", source_path, member.name, type(exc).__name__)
 
 
 def _read_cloudtrail_file(
@@ -108,6 +127,7 @@ def _read_cloudtrail_file(
     raw_bytes: bytes,
     metrics: IngestMetrics,
 ) -> Generator[RawRecord, None, None]:
+    logger.debug("Decoding CloudTrail payload source=%s", source_label)
     decoded_bytes = gzip.decompress(raw_bytes) if source_file_name.endswith(".gz") else raw_bytes
     payload = json.loads(decoded_bytes.decode("utf-8"))
     if not isinstance(payload, dict) or "Records" not in payload or not isinstance(payload["Records"], list):
@@ -116,6 +136,7 @@ def _read_cloudtrail_file(
     for record_index, record in enumerate(payload["Records"]):
         if not isinstance(record, dict):
             metrics.add_record_error("NonObjectRecord")
+            logger.warning("Skipping malformed record source=%s record_index=%s reason=NonObjectRecord", source_label, record_index)
             continue
         yield RawRecord(
             source_file_path=source_label,

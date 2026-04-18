@@ -7,6 +7,10 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from .logging_utils import configure_logging, get_logger
+
+logger = get_logger(__name__)
+
 
 @dataclass(frozen=True)
 class DemoScenario:
@@ -70,10 +74,12 @@ def write_demo_stream(
     output_path.mkdir(parents=True, exist_ok=True)
     scenarios = scenarios or build_demo_scenarios()
     batches = iter_demo_batches(scenarios, batch_size=batch_size)
+    logger.info("Writing demo stream output_dir=%s scenarios=%s batches=%s", output_path, len(scenarios), len(batches))
 
     for batch in batches:
         payload = {"Records": batch.records}
         (output_path / f"{batch.batch_id}.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        logger.debug("Wrote demo batch path=%s records=%s", output_path / f"{batch.batch_id}.json", len(batch.records))
 
     manifest = {
         "scenarios": [
@@ -104,6 +110,7 @@ def main() -> int:
     parser.add_argument("--batch-size", type=int, default=1, help="Number of records per CloudTrail JSON payload.")
     args = parser.parse_args()
 
+    configure_logging()
     manifest = write_demo_stream(args.output_dir, batch_size=max(1, args.batch_size))
     print(json.dumps({"scenario_count": len(manifest["scenarios"]), "batch_count": len(manifest["batches"])}, indent=2))
     return 0

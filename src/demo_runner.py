@@ -14,9 +14,12 @@ from .build_incidents import build_incidents
 from .demo_stream import DemoScenario, build_demo_scenarios, write_demo_stream
 from .derive_features import derive_event_features, load_flag_rules
 from .ingest import ingest_records
+from .logging_utils import configure_logging, get_logger
 from .normalize import normalize_records
 from .services.coverage_review_service import build_coverage_review
 from .weak_label import apply_weak_labels, load_label_rules
+
+logger = get_logger(__name__)
 
 
 def run_demo_pipeline(
@@ -26,18 +29,22 @@ def run_demo_pipeline(
     incident_gap_minutes: int = 15,
     ordered_sequence_limit: int = 25,
 ) -> dict[str, Any]:
-    root = Path(project_root).resolve()
-    output_root = root / output_dir
+    root = _resolve_project_root(project_root)
+    output_root = _resolve_output_dir(root, output_dir)
     stream_root = output_root / "stream"
+    stream_records_root = stream_root / "records"
     processed_root = output_root / "processed"
     reports_root = output_root / "reports"
     processed_root.mkdir(parents=True, exist_ok=True)
     reports_root.mkdir(parents=True, exist_ok=True)
+    logger.info("Starting demo pipeline project_root=%s output_root=%s", root, output_root)
 
     scenarios = build_demo_scenarios()
-    stream_manifest = write_demo_stream(stream_root, scenarios=scenarios, batch_size=batch_size)
+    stream_manifest = write_demo_stream(stream_records_root, scenarios=scenarios, batch_size=batch_size)
+    logger.info("Demo stream generated scenarios=%s batches=%s", len(scenarios), len(stream_manifest["batches"]))
+    (stream_root / "demo_manifest.json").write_text(json.dumps(stream_manifest, indent=2), encoding="utf-8")
 
-    raw_records, ingest_metrics = ingest_records(stream_root)
+    raw_records, ingest_metrics = ingest_records(stream_records_root)
     normalized = normalize_records(raw_records)
     flag_rules = load_flag_rules(root / "configs" / "event_flag_rules.yaml")
     events = derive_event_features(normalized, flag_rules)
@@ -46,13 +53,16 @@ def run_demo_pipeline(
         incident_gap_minutes=incident_gap_minutes,
         ordered_sequence_limit=ordered_sequence_limit,
     )
+    logger.info("Demo incidents built events=%s incidents=%s", len(events), len(incidents))
 
     label_rules = load_label_rules(root / "configs" / "incident_label_rules.yaml")
     incidents_labeled, label_report = apply_weak_labels(incidents, label_rules)
+    logger.info("Demo weak labeling complete incidents=%s positives=%s", len(incidents_labeled), int(incidents_labeled["weak_label_suspicious"].sum()))
     policy = yaml.safe_load((root / "configs" / "decision_policy.yaml").read_text(encoding="utf-8")) or {}
 
     scenario_outputs = []
     for scenario in scenarios:
+        logger.info("Processing demo scenario scenario_id=%s title=%s", scenario.scenario_id, scenario.title)
         incident_row = _match_scenario_to_incident(incidents_labeled, scenario)
         detector_output = _build_detector_output(incident_row)
         coverage = _build_coverage_from_scenario(scenario)
@@ -111,6 +121,7 @@ def run_demo_pipeline(
                 "coverage_review": coverage_review,
             }
         )
+        logger.debug("Scenario output assembled scenario_id=%s incident_id=%s", scenario.scenario_id, incident_row["incident_id"])
 
     events.to_parquet(processed_root / "demo_events.parquet", index=False)
     incidents.to_parquet(processed_root / "demo_incidents.parquet", index=False)
@@ -134,6 +145,7 @@ def run_demo_pipeline(
         "scenario_outputs": scenario_outputs,
     }
     (reports_root / "demo_run_report.json").write_text(json.dumps(_jsonable(report), indent=2), encoding="utf-8")
+    logger.info("Demo report written path=%s", reports_root / "demo_run_report.json")
     return report
 
 
@@ -144,6 +156,7 @@ def main() -> int:
     parser.add_argument("--batch-size", type=int, default=1, help="Records per generated CloudTrail JSON file.")
     args = parser.parse_args()
 
+    configure_logging()
     report = run_demo_pipeline(
         project_root=args.project_root,
         output_dir=args.output_dir,
@@ -235,6 +248,24 @@ def _jsonable(value: Any) -> Any:
     if isinstance(value, pd.Timestamp):
         return value.isoformat()
     return value
+
+
+def _resolve_project_root(project_root: str | Path) -> Path:
+    candidate = Path(project_root).resolve()
+    if (candidate / "configs" / "event_flag_rules.yaml").exists():
+        return candidate
+    module_root = Path(__file__).resolve().parents[1]
+    if (module_root / "configs" / "event_flag_rules.yaml").exists():
+        logger.debug("Falling back to module root for demo pipeline project_root=%s", module_root)
+        return module_root
+    return candidate
+
+
+def _resolve_output_dir(project_root: Path, output_dir: str | Path) -> Path:
+    output_path = Path(output_dir)
+    if output_path.is_absolute():
+        return output_path
+    return project_root / output_path
 
 
 if __name__ == "__main__":

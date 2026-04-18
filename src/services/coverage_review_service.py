@@ -4,7 +4,10 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from decision_support.completeness import build_completeness_assessment, build_review_candidates
+from src.logging_utils import get_logger
 from .dtos import CoverageRecordDTO, CoverageReviewDTO, DecisionSupportPayloadDTO, DetectorRecordDTO, EvidenceRecordDTO, IncidentRecordDTO
+
+logger = get_logger(__name__)
 
 
 COVERAGE_CATEGORIES = ("login", "identity", "network", "resource_activity")
@@ -35,6 +38,7 @@ class CoverageReviewAppService:
     decision_support_service: DecisionSupportGenerator
 
     def build_for_incident(self, incident_id: str, policy_version: str | None = None) -> dict[str, Any]:
+        logger.info("Building coverage review incident_id=%s policy_version=%s", incident_id, policy_version)
         incident_record = self.repositories.fetch_incident(incident_id)
         evidence_record = self.repositories.fetch_latest_evidence_package(incident_id)
         detector_record = self.repositories.fetch_latest_detector_result(incident_id)
@@ -50,10 +54,13 @@ class CoverageReviewAppService:
 
         decision_support_result = _extract_decision_support_payload(decision_support_record)
         if decision_support_result is None:
+            logger.info("Decision support missing; generating incident_id=%s", incident_id)
             decision_support_result = self.decision_support_service.generate_for_incident(
                 incident_id,
                 policy_version=policy_version,
             )
+        else:
+            logger.debug("Using stored decision support incident_id=%s", incident_id)
         return build_coverage_review(
             incident_record=incident_record,
             evidence_record=evidence_record,
@@ -87,6 +94,7 @@ def build_coverage_review_dto(
     coverage_record: CoverageRecordDTO,
     decision_support_payload: DecisionSupportPayloadDTO | None,
 ) -> CoverageReviewDTO:
+    logger.debug("Building coverage review DTO incident_id=%s", incident_record.incident_id)
     ds_payload = decision_support_payload or DecisionSupportPayloadDTO()
     recommended_action = dict(ds_payload.recommended_action)
     completeness_assessment = dict(ds_payload.completeness_assessment)
@@ -100,6 +108,12 @@ def build_coverage_review_dto(
     review_candidates = build_review_candidates(coverage_record.to_decision_support_input())
     coverage_by_category = build_coverage_status_by_category(coverage_record)
     risk_note = build_decision_risk_note(recommended_action, completeness_assessment)
+    logger.debug(
+        "Coverage review assembled incident_id=%s completeness=%s warning=%s",
+        incident_record.incident_id,
+        completeness_assessment.get("level"),
+        bool(completeness_assessment.get("warning")),
+    )
     return CoverageReviewDTO(
         incident_id=incident_record.incident_id,
         incident_summary=build_incident_summary(incident_record, detector_record, evidence_record),

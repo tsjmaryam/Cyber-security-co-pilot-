@@ -4,7 +4,10 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from decision_support.service import generate_decision_support
+from src.logging_utils import get_logger
 from .dtos import CoverageRecordDTO, DecisionSupportInputsDTO, DetectorRecordDTO, EvidenceRecordDTO, IncidentRecordDTO, PolicyRecordDTO
+
+logger = get_logger(__name__)
 
 
 class RepositoryBundle(Protocol):
@@ -21,6 +24,7 @@ class DecisionSupportAppService:
     repositories: RepositoryBundle
 
     def generate_for_incident(self, incident_id: str, policy_version: str | None = None) -> dict[str, Any]:
+        logger.info("Generating decision support incident_id=%s policy_version=%s", incident_id, policy_version)
         incident_record = self.repositories.fetch_incident(incident_id)
         evidence_record = self.repositories.fetch_latest_evidence_package(incident_id)
         detector_record = self.repositories.fetch_latest_detector_result(incident_id)
@@ -43,8 +47,10 @@ class DecisionSupportAppService:
             coverage_record=coverage_record,
             policy_record=policy_record,
         )
+        logger.debug("Decision support inputs assembled incident_id=%s has_evidence=%s", incident_id, evidence_record is not None)
         result = generate_decision_support(**inputs)
         self.repositories.save_decision_support_result(incident_id, result, policy_record["policy_version"])
+        logger.info("Decision support saved incident_id=%s policy_version=%s", incident_id, policy_record["policy_version"])
         return result
 
 
@@ -72,6 +78,7 @@ def assemble_decision_support_inputs_dto(
     coverage_record: CoverageRecordDTO,
     policy_record: PolicyRecordDTO,
 ) -> DecisionSupportInputsDTO:
+    logger.debug("Assembling decision support DTO incident_id=%s", incident_record.incident_id)
     summary_json = evidence_record.summary_json if evidence_record else {}
     incident = {
         "incident_id": incident_record.incident_id,
