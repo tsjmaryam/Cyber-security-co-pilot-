@@ -1,0 +1,9 @@
+input_path: data/flaws_cloudtrail_logs.tar
+output_root: data/processed
+reports_root: reports
+csv_sample_limit: 100000
+incident_gap_minutes: 30
+ordered_sequence_limit: 50
+write_csv_sample: true
+write_full_csv: true
+extract_archives: false

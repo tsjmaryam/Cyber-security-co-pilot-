@@ -1,0 +1,62 @@
+console_login_event_names:
+  - ConsoleLogin
+auth_related_event_names:
+  - ConsoleLogin
+  - AssumeRole
+  - GetSessionToken
+  - GetFederationToken
+  - CreateLoginProfile
+  - UpdateLoginProfile
+  - ChangePassword
+  - CreateAccessKey
+  - DeleteAccessKey
+  - UpdateAccessKey
+  - AttachUserPolicy
+  - AttachRolePolicy
+  - PutUserPolicy
+  - PutRolePolicy
+  - AddUserToGroup
+  - CreateUser
+  - CreateRole
+  - PassRole
+s3_event_sources:
+  - s3.amazonaws.com
+iam_event_sources:
+  - iam.amazonaws.com
+ec2_event_sources:
+  - ec2.amazonaws.com
+recon_event_names:
+  - DescribeInstances
+  - DescribeSecurityGroups
+  - DescribeVolumes
+  - DescribeSnapshots
+  - DescribeSubnets
+  - DescribeVpcs
+  - DescribeImages
+  - DescribeAddresses
+  - DescribeRegions
+  - DescribeAvailabilityZones
+  - ListBuckets
+  - GetBucketAcl
+  - GetBucketPolicy
+  - GetBucketLocation
+  - GetCallerIdentity
+privilege_change_event_names:
+  - AttachUserPolicy
+  - AttachRolePolicy
+  - PutUserPolicy
+  - PutRolePolicy
+  - AddUserToGroup
+  - CreateAccessKey
+  - UpdateAssumeRolePolicy
+  - PassRole
+  - PutBucketPolicy
+resource_creation_event_names:
+  - RunInstances
+  - CreateUser
+  - CreateRole
+  - CreatePolicy
+  - CreateBucket
+  - CreateFunction
+  - CreateKeyPair
+  - CreateSecurityGroup

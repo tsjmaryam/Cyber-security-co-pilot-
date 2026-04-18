@@ -1,0 +1,240 @@
+{
+  "note": "Metrics are measured against rule-derived weak labels, not analyst-confirmed malicious ground truth.",
+  "train_rows": 276156,
+  "test_rows": 69040,
+  "positive_rate_train": 0.52386,
+  "positive_rate_test": 0.523856,
+  "roc_auc_test": 0.999971,
+  "average_precision_test": 0.999979,
+  "classification_report": {
+    "0": {
+      "precision": 0.999148,
+      "recall": 0.998722,
+      "f1-score": 0.998935,
+      "support": 32873.0
+    },
+    "1": {
+      "precision": 0.998839,
+      "recall": 0.999226,
+      "f1-score": 0.999032,
+      "support": 36167.0
+    },
+    "accuracy": 0.998986,
+    "macro avg": {
+      "precision": 0.998994,
+      "recall": 0.998974,
+      "f1-score": 0.998984,
+      "support": 69040.0
+    },
+    "weighted avg": {
+      "precision": 0.998986,
+      "recall": 0.998986,
+      "f1-score": 0.998986,
+      "support": 69040.0
+    }
+  },
+  "top_positive_coefficients": [
+    {
+      "feature": "bool__has_high_failure_ratio",
+      "coefficient": 8.074316
+    },
+    {
+      "feature": "bool__has_recon_plus_resource_creation",
+      "coefficient": 6.1906
+    },
+    {
+      "feature": "bool__has_failure_burst",
+      "coefficient": 5.66976
+    },
+    {
+      "feature": "bool__has_event_burst",
+      "coefficient": 4.948097
+    },
+    {
+      "feature": "bool__has_sts_sequence",
+      "coefficient": 4.437257
+    },
+    {
+      "feature": "bool__has_broad_surface_area",
+      "coefficient": 3.897842
+    },
+    {
+      "feature": "bool__contains_resource_creation_api",
+      "coefficient": 3.183144
+    },
+    {
+      "feature": "bool__has_iam_sequence",
+      "coefficient": 3.040544
+    },
+    {
+      "feature": "bool__contains_recon_like_api",
+      "coefficient": 3.008723
+    },
+    {
+      "feature": "bool__has_ec2_sequence",
+      "coefficient": 2.597678
+    },
+    {
+      "feature": "bool__contains_privilege_change_api",
+      "coefficient": 1.485329
+    },
+    {
+      "feature": "num__failure_ratio",
+      "coefficient": 1.291687
+    },
+    {
+      "feature": "cat__primary_source_ip_address_84.252.252.117",
+      "coefficient": 0.791541
+    },
+    {
+      "feature": "bool__has_recon_plus_privilege",
+      "coefficient": 0.613959
+    },
+    {
+      "feature": "cat__first_event_name_DescribeKeyPairs",
+      "coefficient": 0.501209
+    },
+    {
+      "feature": "bool__has_root_plus_privilege",
+      "coefficient": 0.493871
+    },
+    {
+      "feature": "cat__primary_source_ip_address_9.245.1.85",
+      "coefficient": 0.444564
+    },
+    {
+      "feature": "cat__primary_source_ip_address_5.205.62.253",
+      "coefficient": 0.362119
+    },
+    {
+      "feature": "cat__last_event_name_DescribeKeyPairs",
+      "coefficient": 0.355438
+    },
+    {
+      "feature": "cat__top_event_name_DescribeVolumeStatus",
+      "coefficient": 0.311189
+    },
+    {
+      "feature": "cat__top_event_name_DescribeSnapshots",
+      "coefficient": 0.298205
+    },
+    {
+      "feature": "cat__top_event_name_ListPolicies",
+      "coefficient": 0.279253
+    },
+    {
+      "feature": "cat__last_event_name_PutBucketPolicy",
+      "coefficient": 0.274964
+    },
+    {
+      "feature": "cat__top_event_name_GetPolicy",
+      "coefficient": 0.256868
+    },
+    {
+      "feature": "bool__has_privilege_plus_resource_creation",
+      "coefficient": 0.247041
+    }
+  ],
+  "top_negative_coefficients": [
+    {
+      "feature": "cat__actor_key_arn:aws:iam::811596193553:user/backup",
+      "coefficient": -9.032054
+    },
+    {
+      "feature": "cat__actor_key_arn:aws:iam::811596193553:user/Level6",
+      "coefficient": -9.007879
+    },
+    {
+      "feature": "bool__actor_is_assumed_role",
+      "coefficient": -4.559192
+    },
+    {
+      "feature": "cat__last_event_name_infrequent_sklearn",
+      "coefficient": -2.688566
+    },
+    {
+      "feature": "cat__first_event_name_AssumeRole",
+      "coefficient": -2.556111
+    },
+    {
+      "feature": "cat__top_event_name_AssumeRole",
+      "coefficient": -2.554399
+    },
+    {
+      "feature": "cat__last_event_name_AssumeRole",
+      "coefficient": -2.494325
+    },
+    {
+      "feature": "cat__first_event_name_infrequent_sklearn",
+      "coefficient": -2.309269
+    },
+    {
+      "feature": "cat__primary_source_ip_address_106.250.42.115",
+      "coefficient": -2.024169
+    },
+    {
+      "feature": "cat__primary_source_ip_address_apigateway.amazonaws.com",
+      "coefficient": -2.017167
+    },
+    {
+      "feature": "cat__primary_source_ip_address_ec2.amazonaws.com",
+      "coefficient": -1.80184
+    },
+    {
+      "feature": "cat__actor_key_arn:aws:sts::811596193553:assumed-role/flaws/i-aa2d3b42e5c6e801a",
+      "coefficient": -1.651799
+    },
+    {
+      "feature": "cat__first_event_name_GetRestApis",
+      "coefficient": -1.584691
+    },
+    {
+      "feature": "cat__actor_key_arn:aws:sts::811596193553:assumed-role/SecurityMonkey/secmonkey",
+      "coefficient": -1.526011
+    },
+    {
+      "feature": "cat__top_event_name_RunInstances",
+      "coefficient": -1.484604
+    },
+    {
+      "feature": "cat__primary_source_ip_address_255.253.125.115",
+      "coefficient": -1.464235
+    },
+    {
+      "feature": "cat__top_event_name_GetRestApi",
+      "coefficient": -1.359533
+    },
+    {
+      "feature": "cat__top_event_name_GetRestApis",
+      "coefficient": -1.318306
+    },
+    {
+      "feature": "cat__last_event_name_RunInstances",
+      "coefficient": -1.313884
+    },
+    {
+      "feature": "cat__top_event_name_infrequent_sklearn",
+      "coefficient": -1.283651
+    },
+    {
+      "feature": "cat__top_event_name_GetBucketAcl",
+      "coefficient": -1.198654
+    },
+    {
+      "feature": "cat__actor_key_ec2.amazonaws.com",
+      "coefficient": -1.198645
+    },
+    {
+      "feature": "cat__last_event_name_GetBucketAcl",
+      "coefficient": -1.188348
+    },
+    {
+      "feature": "cat__last_event_name_GetRestApi",
+      "coefficient": -1.164431
+    },
+    {
+      "feature": "cat__primary_source_ip_address_60.219.252.71",
+      "coefficient": -1.153222
+    }
+  ]
+}

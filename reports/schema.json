@@ -1,0 +1,611 @@
+{
+  "events_flat": {
+    "source_file_path": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "source_file_name": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "record_index_in_file": {
+      "dtype": "int64",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "ingest_ts_utc": {
+      "dtype": "datetime64[ns, UTC]",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "event_id": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "event_version": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "event_time": {
+      "dtype": "datetime64[ns, UTC]",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "event_source": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "event_name": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "event_type": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "api_version": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "aws_region": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "read_only": {
+      "dtype": "boolean",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "recipient_account_id": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "shared_event_id": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "vpc_endpoint_id": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "user_type": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "principal_id": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "user_arn": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "user_account_id": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "invoked_by": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "access_key_id": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "username": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "session_mfa_authenticated": {
+      "dtype": "boolean",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "session_creation_date": {
+      "dtype": "datetime64[ns, UTC]",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "session_issuer_type": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "session_issuer_principal_id": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "session_issuer_arn": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "session_issuer_account_id": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "session_issuer_username": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "source_ip_address": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "user_agent": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "error_code": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "error_message": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "request_parameters_json": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "response_elements_json": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "additional_event_data_json": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "service_event_details_json": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "resources_json": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "resource_count": {
+      "dtype": "Int64",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "resource_types_concat": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "resource_arns_concat": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "resource_account_ids_concat": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "user_arn_presence_state": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "access_key_id_presence_state": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "source_ip_address_presence_state": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "user_agent_presence_state": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "request_parameters_presence_state": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "resources_presence_state": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "event_time_epoch_ms": {
+      "dtype": "Int64",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "success": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "is_error": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "missing_user_arn": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "missing_access_key_id": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "missing_source_ip_address": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "missing_user_agent": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "missing_request_parameters": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "missing_resources": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "raw_event_row_index": {
+      "dtype": "Int64",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "event_date": {
+      "dtype": "string",
+      "nullable": false,
+      "derivation_logic": "UTC calendar date derived from event_time."
+    },
+    "event_hour_utc": {
+      "dtype": "Int64",
+      "nullable": false,
+      "derivation_logic": "UTC hour derived from event_time."
+    },
+    "event_day_of_week_utc": {
+      "dtype": "string",
+      "nullable": false,
+      "derivation_logic": "UTC day name derived from event_time."
+    },
+    "event_month_utc": {
+      "dtype": "Int64",
+      "nullable": false,
+      "derivation_logic": "UTC month number derived from event_time."
+    },
+    "is_weekend_utc": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "True when event_time falls on Saturday or Sunday in UTC."
+    },
+    "actor_key": {
+      "dtype": "string",
+      "nullable": false,
+      "derivation_logic": "First non-null of user_arn, principal_id, access_key_id, source_ip_address, else UNKNOWN_ACTOR."
+    },
+    "session_key": {
+      "dtype": "string",
+      "nullable": false,
+      "derivation_logic": "Session-like grouping key based on access key, actor/IP/day, or IP/user-agent/day fallback."
+    },
+    "global_sort_key": {
+      "dtype": "string",
+      "nullable": false,
+      "derivation_logic": "Deterministic ordering key from event_time_epoch_ms, source_file_name, record_index_in_file, and event_id."
+    },
+    "actor_event_rank": {
+      "dtype": "Int64",
+      "nullable": false,
+      "derivation_logic": "1-based order of events within actor_key under canonical event ordering."
+    },
+    "session_event_rank": {
+      "dtype": "Int64",
+      "nullable": false,
+      "derivation_logic": "1-based order of events within session_key under canonical event ordering."
+    },
+    "ip_event_rank": {
+      "dtype": "Int64",
+      "nullable": false,
+      "derivation_logic": "1-based order of events within source_ip_address under canonical event ordering."
+    },
+    "seconds_since_prev_session_event": {
+      "dtype": "float64",
+      "nullable": true,
+      "derivation_logic": "Elapsed seconds from the previous event within session_key."
+    },
+    "same_event_source_as_prev_session_event": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Whether event_source matches the previous event in the same session_key."
+    },
+    "same_event_name_as_prev_session_event": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Whether event_name matches the previous event in the same session_key."
+    },
+    "is_root_user": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "True when user_type is Root or the ARN ends with :root."
+    },
+    "is_assumed_role": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "True when identity indicates an assumed role."
+    },
+    "is_iam_user": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "True when identity indicates an IAM user."
+    },
+    "is_aws_service_call": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "True when invoked_by is set or user_type implies an AWS service principal."
+    },
+    "is_console_login": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Rule-driven flag from event_flag_rules.yaml."
+    },
+    "is_auth_related": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Rule-driven flag from event_flag_rules.yaml."
+    },
+    "is_s3_related": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Rule-driven flag from event_flag_rules.yaml."
+    },
+    "is_iam_related": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Rule-driven flag from event_flag_rules.yaml."
+    },
+    "is_ec2_related": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Rule-driven flag from event_flag_rules.yaml."
+    },
+    "is_recon_like_api": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Rule-driven flag from event_flag_rules.yaml."
+    },
+    "is_privilege_change_api": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Rule-driven flag from event_flag_rules.yaml."
+    },
+    "is_resource_creation_api": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Rule-driven flag from event_flag_rules.yaml."
+    },
+    "is_failed_api_call": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "is_successful_api_call": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "actor_events_prev_5m": {
+      "dtype": "Int64",
+      "nullable": false,
+      "derivation_logic": "Count of prior events for the same actor_key in the previous five minutes."
+    },
+    "actor_events_prev_1h": {
+      "dtype": "Int64",
+      "nullable": false,
+      "derivation_logic": "Count of prior events for the same actor_key in the previous hour."
+    },
+    "ip_events_prev_5m": {
+      "dtype": "Int64",
+      "nullable": false,
+      "derivation_logic": "Count of prior events for the same source_ip_address in the previous five minutes."
+    },
+    "ip_events_prev_1h": {
+      "dtype": "Int64",
+      "nullable": false,
+      "derivation_logic": "Count of prior events for the same source_ip_address in the previous hour."
+    },
+    "same_event_name_prev_5m": {
+      "dtype": "Int64",
+      "nullable": false,
+      "derivation_logic": "Count of prior events with the same event_name in the previous five minutes."
+    },
+    "same_event_name_prev_1h": {
+      "dtype": "Int64",
+      "nullable": false,
+      "derivation_logic": "Count of prior events with the same event_name in the previous hour."
+    },
+    "same_event_source_prev_5m": {
+      "dtype": "Int64",
+      "nullable": false,
+      "derivation_logic": "Count of prior events with the same event_source in the previous five minutes."
+    },
+    "same_event_source_prev_1h": {
+      "dtype": "Int64",
+      "nullable": false,
+      "derivation_logic": "Count of prior events with the same event_source in the previous hour."
+    }
+  },
+  "incidents": {
+    "incident_id": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "actor_key": {
+      "dtype": "string",
+      "nullable": false,
+      "derivation_logic": "First non-null of user_arn, principal_id, access_key_id, source_ip_address, else UNKNOWN_ACTOR."
+    },
+    "primary_source_ip_address": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "incident_start_time": {
+      "dtype": "datetime64[ns, UTC]",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "incident_end_time": {
+      "dtype": "datetime64[ns, UTC]",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "incident_duration_seconds": {
+      "dtype": "float64",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "event_count": {
+      "dtype": "int64",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "distinct_event_names": {
+      "dtype": "int64",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "distinct_event_sources": {
+      "dtype": "int64",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "distinct_regions": {
+      "dtype": "int64",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "error_event_count": {
+      "dtype": "int64",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "success_event_count": {
+      "dtype": "int64",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "first_event_name": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "last_event_name": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "top_event_name": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "contains_console_login": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "contains_recon_like_api": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "contains_privilege_change_api": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "contains_resource_creation_api": {
+      "dtype": "boolean",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "resource_types_seen": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "user_agents_seen": {
+      "dtype": "object",
+      "nullable": true,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "ordered_event_name_sequence": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "ordered_event_source_sequence": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "event_ids_in_order": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "raw_event_row_indices": {
+      "dtype": "object",
+      "nullable": false,
+      "derivation_logic": "Source field or passthrough normalization."
+    },
+    "incident_start_date": {
+      "dtype": "string",
+      "nullable": false,
+      "derivation_logic": "UTC date derived from incident_start_time for partitioned export."
+    }
+  }
+}

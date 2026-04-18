@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+
+data/raw/
+data/interim/
+data/processed/
+data/*.tar
+data/*.gz
+
+!data/data_plan.md
+

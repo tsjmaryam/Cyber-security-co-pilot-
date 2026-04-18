@@ -1,0 +1,30 @@
+{
+  "incident_count": 345196,
+  "positive_count": 180834,
+  "positive_rate": 0.523859,
+  "label_threshold": 5.0,
+  "rule_hits": {
+    "recon_activity": 22858,
+    "privilege_change": 137,
+    "resource_creation": 265651,
+    "console_login": 76,
+    "root_actor": 640,
+    "assumed_role_actor": 8591,
+    "high_failure_ratio": 178091,
+    "failure_burst": 173493,
+    "event_burst": 7006,
+    "broad_surface_area": 2206,
+    "iam_sequence": 5669,
+    "sts_sequence": 53345,
+    "ec2_sequence": 278987,
+    "recon_plus_privilege": 97,
+    "recon_plus_resource_creation": 3666,
+    "privilege_plus_resource_creation": 24,
+    "root_plus_privilege": 30
+  },
+  "score_distribution": {
+    "min": 0.0,
+    "median": 7.0,
+    "max": 23.0
+  }
+}

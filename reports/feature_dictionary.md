@@ -1,0 +1,35 @@
+# Feature Dictionary
+
+- `global_sort_key`: Canonical deterministic event ordering key.
+- `actor_key`: Primary actor identifier fallback chain for analysis.
+- `session_key`: Session-like identifier using access key, actor/IP/day, or IP/user agent/day.
+- `actor_event_rank`: Order of an event within its actor_key.
+- `session_event_rank`: Order of an event within its session_key.
+- `ip_event_rank`: Order of an event within its source IP.
+- `seconds_since_prev_session_event`: Time gap from the previous event in the same session_key.
+- `same_event_source_as_prev_session_event`: Whether the prior session event had the same event_source.
+- `same_event_name_as_prev_session_event`: Whether the prior session event had the same event_name.
+- `is_root_user`: Identity convenience flag for root activity.
+- `is_assumed_role`: Identity convenience flag for assumed-role activity.
+- `is_iam_user`: Identity convenience flag for IAM user activity.
+- `is_aws_service_call`: Identity convenience flag for AWS service-originated activity.
+- `is_console_login`: Rule-based flag for console login activity.
+- `is_auth_related`: Rule-based flag for authentication or credential operations.
+- `is_s3_related`: Rule-based flag for S3 events.
+- `is_iam_related`: Rule-based flag for IAM events.
+- `is_ec2_related`: Rule-based flag for EC2 events.
+- `is_recon_like_api`: Rule-based flag for reconnaissance-like APIs.
+- `is_privilege_change_api`: Rule-based flag for privilege-modifying APIs.
+- `is_resource_creation_api`: Rule-based flag for create or launch APIs.
+- `actor_events_prev_5m`: Count of prior events by actor in the preceding five minutes.
+- `actor_events_prev_1h`: Count of prior events by actor in the preceding hour.
+- `ip_events_prev_5m`: Count of prior events by source IP in the preceding five minutes.
+- `ip_events_prev_1h`: Count of prior events by source IP in the preceding hour.
+- `same_event_name_prev_5m`: Count of prior events with the same event_name in the preceding five minutes.
+- `same_event_name_prev_1h`: Count of prior events with the same event_name in the preceding hour.
+- `same_event_source_prev_5m`: Count of prior events with the same event_source in the preceding five minutes.
+- `same_event_source_prev_1h`: Count of prior events with the same event_source in the preceding hour.
+- `incident_id`: Deterministic identifier for an inactivity-bounded actor/IP activity cluster.
+- `ordered_event_name_sequence`: Ordered pipe-delimited event sequence for each incident.
+- `ordered_event_source_sequence`: Ordered pipe-delimited event source sequence for each incident.
+- `raw_event_row_indices`: JSON array pointer back to row indices in events_flat.

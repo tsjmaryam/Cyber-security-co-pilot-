@@ -1,0 +1,28 @@
+label_threshold: 5
+
+weights:
+  recon_activity: 2
+  privilege_change: 3
+  resource_creation: 2
+  console_login: 1
+  root_actor: 2
+  assumed_role_actor: 1
+  high_failure_ratio: 2
+  failure_burst: 2
+  event_burst: 1
+  broad_surface_area: 1
+  iam_sequence: 1
+  sts_sequence: 1
+  ec2_sequence: 1
+  recon_plus_privilege: 3
+  recon_plus_resource_creation: 2
+  privilege_plus_resource_creation: 2
+  root_plus_privilege: 3
+
+thresholds:
+  high_failure_ratio: 0.5
+  min_failure_events: 3
+  high_event_count: 15
+  high_distinct_event_names: 8
+  short_incident_seconds: 900
+  high_burst_events_per_minute: 2.0
