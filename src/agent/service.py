@@ -16,6 +16,23 @@ class DecisionSupportGenerator(Protocol):
     def generate_for_incident(self, incident_id: str, policy_version: str | None = None) -> dict[str, Any]: ...
 
 
+def recover_answer_after_loop(
+    *,
+    last_react_step,
+    context_summary: dict[str, bool],
+    reasoning_trace: list[dict[str, Any]],
+) -> str | None:
+    if last_react_step is None:
+        return None
+    if not any(context_summary.values()):
+        return None
+    if last_react_step.action != "finish":
+        return None
+    if reasoning_trace:
+        reasoning_trace[-1]["status"] = "finished_after_loop"
+    return last_react_step.final_answer or last_react_step.raw_content.strip()
+
+
 @dataclass
 class DecisionSupportAgent:
     repositories: AgentRepositoryBundle
@@ -46,6 +63,7 @@ class DecisionSupportAgent:
         reasoning_trace: list[dict[str, Any]] = []
         answer: str | None = None
         last_response: dict[str, Any] | None = None
+        last_react_step = None
 
         for step_index in range(1, self.max_reasoning_steps + 1):
             logger.debug("Agent step start incident_id=%s step=%s", incident_id, step_index)
@@ -57,6 +75,7 @@ class DecisionSupportAgent:
             last_response = response
             content = extract_text_content(response)
             react_step = parse_react_step(content)
+            last_react_step = react_step
             trace_item = {
                 "step": step_index,
                 "thought": react_step.thought,
@@ -97,6 +116,19 @@ class DecisionSupportAgent:
             trace_item["observation"] = observation
             messages.append({"role": "assistant", "content": react_step.raw_content})
             messages.append({"role": "user", "content": build_observation_message(tool.name, observation)})
+
+        if answer is None:
+            answer = recover_answer_after_loop(
+                last_react_step=last_react_step,
+                context_summary=runtime.context_summary(),
+                reasoning_trace=reasoning_trace,
+            )
+            if answer is not None:
+                logger.warning(
+                    "Agent recovered final answer after loop incident_id=%s source=%s",
+                    incident_id,
+                    runtime.decision_support_source,
+                )
 
         if answer is None:
             logger.error("Agent failed to finish incident_id=%s max_steps=%s", incident_id, self.max_reasoning_steps)

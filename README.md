@@ -95,7 +95,7 @@ python -c "from src.services.operator_decision_service import OperatorDecisionAp
 To query the new model-agnostic agent against a Postgres-backed incident using any OpenAI-compatible chat endpoint:
 
 ```bash
-python -c "from src.services.agent_app_service import query_incident_agent; import json; print(json.dumps(query_incident_agent('incident_000000001', 'What should I do next?', env={'POSTGRES_DSN':'postgresql://user:pass@localhost:5432/cyber', 'OPENAI_MODEL':'gpt-4.1-mini', 'OPENAI_BASE_URL':'https://your-endpoint.example/v1', 'OPENAI_API_KEY':'token'}), indent=2))"
+python -c "from src.services.agent_app_service import query_incident_agent; import json; print(json.dumps(query_incident_agent('incident_000000001', 'What should I do next?', env={'POSTGRES_DSN':'postgresql://user:pass@localhost:5432/cyber', 'OPENAI_MODEL':'gpt-5.4', 'OPENAI_BASE_URL':'https://your-endpoint.example/v1', 'OPENAI_API_KEY':'token'}), indent=2))"
 ```
 
 The agent is model-agnostic at the application boundary and now uses a bounded ReAct loop:
@@ -109,7 +109,7 @@ For local testing, the agent can also reuse the Codex desktop auth token instead
 
 ```powershell
 $env:OPENAI_BASE_URL="https://api.openai.com/v1"
-$env:OPENAI_MODEL="gpt-4.1-mini"
+$env:OPENAI_MODEL="gpt-5.4"
 $env:AGENT_USE_CODEX_AUTH="1"
 ```
 
@@ -177,6 +177,30 @@ Start the backend locally:
 ```
 
 This starts the core FastAPI backend on `:8000` and the dedicated agent service on `:8001`.
+
+### Agent auth modes
+
+The dedicated agent service supports two explicit auth modes:
+
+- `AGENT_AUTH_MODE=api_key`
+  - production mode
+  - requires `OPENAI_API_KEY` or `AGENT_API_KEY`
+  - this is the supported server-to-server configuration
+  - default model is `gpt-5.4` if `OPENAI_MODEL` is not set
+
+- `AGENT_AUTH_MODE=openai_session`
+  - local development only
+  - reuses the local Codex session token from `~/.codex/auth.json`
+  - only allowed when `OPENAI_BASE_URL=https://api.openai.com/v1`
+  - not suitable for production deployments
+
+- `AGENT_AUTH_MODE=mock`
+  - deterministic local mock mode
+  - no external model call
+  - uses real incident context and decision-support data from Postgres
+  - intended for demos, UI testing, and integration checks
+
+If `AGENT_AUTH_MODE` is omitted, the service defaults to `api_key` unless legacy `AGENT_USE_CODEX_AUTH` is set.
 
 Run the Sentinel UI:
 

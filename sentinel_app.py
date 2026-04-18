@@ -29,6 +29,8 @@ if "operator_decision" not in st.session_state:
     st.session_state.operator_decision = None
 if "agent_answer" not in st.session_state:
     st.session_state.agent_answer = None
+if "agent_auth_status" not in st.session_state:
+    st.session_state.agent_auth_status = None
 
 
 def now_str() -> str:
@@ -184,6 +186,16 @@ def ask_agent(incident_id: str, user_query: str) -> None:
         add_audit(f"Agent request failed for {incident_id}")
 
 
+def load_agent_auth_status(incident_id: str) -> None:
+    try:
+        with httpx.Client(base_url=AGENT_URL, timeout=10.0) as client:
+            response = client.get(f"/incidents/{incident_id}/agent-auth")
+            response.raise_for_status()
+            st.session_state.agent_auth_status = response.json()["result"]
+    except Exception as exc:
+        st.session_state.agent_auth_status = {"error": str(exc)}
+
+
 st.sidebar.header("Controls")
 st.sidebar.caption(f"Backend: {BACKEND_URL}")
 st.sidebar.caption(f"Agent: {AGENT_URL}")
@@ -191,11 +203,13 @@ incident_id = st.sidebar.text_input("Incident ID", value=DEFAULT_INCIDENT_ID)
 
 if st.sidebar.button("Load Incident") or st.session_state.incident_bundle is None:
     st.session_state.incident_bundle = load_incident_bundle(incident_id)
+    load_agent_auth_status(incident_id)
 
 bundle = st.session_state.incident_bundle or mock_bundle(incident_id)
 incident = bundle["incident"]
 coverage_review = bundle["coverage_review"]
 decision_support = bundle["decision_support"]["decision_support_result"]
+agent_auth_status = st.session_state.agent_auth_status or {}
 
 if st.session_state.backend_error:
     st.warning("Backend not connected cleanly. Showing fallback data.")
@@ -273,6 +287,20 @@ with left:
         st.success(f"Latest operator decision: {st.session_state.operator_decision.get('decision_type', 'recorded')}")
 
     st.markdown("### Ask Agent")
+    auth_mode = agent_auth_status.get("auth_mode")
+    if auth_mode == "api_key":
+        st.success("Agent auth mode: Production mode (API key)")
+    elif auth_mode == "openai_session":
+        st.warning("Agent auth mode: Local/dev only (OpenAI session). Not for production.")
+    elif auth_mode == "mock":
+        st.info("Agent auth mode: Mock mode. Deterministic local responses for demos and testing.")
+    elif agent_auth_status.get("error"):
+        st.error(f"Agent auth status unavailable: {agent_auth_status['error']}")
+
+    if agent_auth_status:
+        with st.expander("Agent auth details"):
+            st.json(agent_auth_status)
+
     agent_query = st.text_input("Question for the agent", value="What should I do next?")
     if st.button("Send to Agent"):
         ask_agent(incident_id_val, agent_query)

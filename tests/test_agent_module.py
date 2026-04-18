@@ -5,8 +5,9 @@ import pytest
 
 from src.agent.auth import CodexAuthError, load_codex_access_token, validate_codex_auth_base_url
 from src.agent.openai_compat import OpenAICompatConfig, OpenAICompatError, create_chat_completion, extract_text_content
-from src.agent.service import DecisionSupportAgent
-from src.services.agent_app_service import AgentAppConfig, load_agent_app_config
+from src.agent.react import ReactStep
+from src.agent.service import DecisionSupportAgent, recover_answer_after_loop
+from src.services.agent_app_service import AgentAppConfig, load_agent_app_config, query_incident_agent
 
 
 class FakeResponse:
@@ -178,6 +179,25 @@ def test_agent_rejects_finish_before_tool_use():
     assert result["context_summary"]["has_detector_result"] is True
 
 
+def test_recover_answer_after_loop_returns_grounded_finish():
+    reasoning_trace = [{"step": 3, "action": "finish"}]
+    step = ReactStep(
+        thought="Enough grounded context.",
+        action="finish",
+        action_input={},
+        final_answer="Use the stored recommendation.",
+        raw_content='{"action":"finish"}',
+    )
+
+    answer = recover_answer_after_loop(
+        last_react_step=step,
+        context_summary={"has_incident": True, "has_decision_support_result": True},
+        reasoning_trace=reasoning_trace,
+    )
+
+    assert answer == "Use the stored recommendation."
+    assert reasoning_trace[-1]["status"] == "finished_after_loop"
+
 def test_load_agent_app_config_supports_openai_style_env_names():
     config = load_agent_app_config(
         {
@@ -193,6 +213,7 @@ def test_load_agent_app_config_supports_openai_style_env_names():
     assert config == AgentAppConfig(
         model="gpt-4.1-mini",
         base_url="https://endpoint.example/v1",
+        auth_mode="api_key",
         api_key="secret",
         chat_path="/chat/completions",
         temperature=0.3,
@@ -224,6 +245,29 @@ def test_load_agent_app_config_can_use_codex_auth_token(tmp_path: Path):
     assert config.api_key == "codex-access-token"
 
 
-def test_load_agent_app_config_requires_model_and_base_url():
+def test_load_agent_app_config_requires_base_url_when_not_mock():
     with pytest.raises(ValueError):
         load_agent_app_config({})
+
+
+def test_query_incident_agent_supports_mock_mode(monkeypatch):
+    fake_agent = DecisionSupportAgent(
+        repositories=FakeRepositories(include_decision_support=True),
+        decision_support_service=FakeDecisionSupportService(),
+        endpoint_config=OpenAICompatConfig(model="gpt-5.4", base_url="mock://local/v1"),
+    )
+
+    monkeypatch.setattr("src.services.agent_app_service.build_postgres_backed_agent", lambda config, env=None: fake_agent)
+
+    result = query_incident_agent(
+        incident_id="INC-MOCK",
+        user_query="What should I do next?",
+        env={
+            "AGENT_AUTH_MODE": "mock",
+        },
+    )
+
+    assert result["incident_id"] == "INC-MOCK"
+    assert result["model"] == "gpt-5.4"
+    assert result["raw_response"]["mock_mode"] is True
+    assert result["context_summary"]["has_incident"] is True

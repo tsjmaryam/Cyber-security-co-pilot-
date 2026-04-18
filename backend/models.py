@@ -38,6 +38,10 @@ class AgentQueryRequest(BaseModel):
     policy_version: str | None = None
 
 
+class AgentAuthStatusResponse(BaseModel):
+    result: dict[str, Any]
+
+
 class AgentQueryResponse(BaseModel):
     result: dict[str, Any]
 

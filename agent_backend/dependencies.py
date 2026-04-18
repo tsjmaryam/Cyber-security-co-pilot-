@@ -4,7 +4,7 @@ import os
 from fastapi import HTTPException
 
 from src.logging_utils import get_logger
-from src.services.agent_app_service import query_incident_agent
+from src.services.agent_app_service import describe_agent_auth, query_incident_agent
 
 logger = get_logger(__name__)
 
@@ -24,6 +24,10 @@ def run_agent_query(incident_id: str, user_query: str, policy_version: str | Non
         policy_version=policy_version,
         env=get_agent_env(),
     )
+
+
+def get_agent_auth_status() -> dict:
+    return describe_agent_auth(get_agent_env())
 
 
 def as_http_exception(exc: ValueError) -> HTTPException:
