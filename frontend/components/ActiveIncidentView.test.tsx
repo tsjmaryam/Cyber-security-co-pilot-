@@ -43,12 +43,13 @@ const viewModel: IncidentViewModel = {
 };
 
 describe("ActiveIncidentView", () => {
-  it("renders warning, signal explanation, and enables alternative selection flow", () => {
+  it("renders the simple view without expert-only panels", () => {
     const onSelectAlternative = vi.fn();
 
     render(
       <ActiveIncidentView
         viewModel={viewModel}
+        viewMode="simple"
         incidentLoading={false}
         incidentError={null}
         actionMessage={null}
@@ -72,11 +73,48 @@ describe("ActiveIncidentView", () => {
     );
 
     expect(screen.getByText(/recommendation may be incomplete/i)).toBeInTheDocument();
+    expect(screen.getByText(/a\. what happened\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/b\. what should i do\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/c\. what else could i do\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/d\. did we check everything\?/i)).toBeInTheDocument();
     expect(screen.getByText(/human decision recorded/i)).toBeInTheDocument();
     expect(screen.getByText(/rationale: contain the account before more changes happen\./i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /explain privilege change/i }));
-    expect(screen.getByText(/permissions or access levels changed/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^agent$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/confidence/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /temporary access lock/i }));
     expect(onSelectAlternative).toHaveBeenCalledWith("temporary_access_lock");
+  });
+
+  it("renders expert-only signal details when expert mode is enabled", () => {
+    render(
+      <ActiveIncidentView
+        viewModel={viewModel}
+        viewMode="expert"
+        incidentLoading={false}
+        incidentError={null}
+        actionMessage={null}
+        selectedAlternativeId={null}
+        rationale=""
+        actionLoading={false}
+        agentAuth={null}
+        agentQuestion="What should I do?"
+        agentAnswer={null}
+        agentLoading={false}
+        agentError={null}
+        onSelectAlternative={vi.fn()}
+        onRationaleChange={vi.fn()}
+        onApprove={vi.fn()}
+        onAlternative={vi.fn()}
+        onDoubleCheck={vi.fn()}
+        onEscalate={vi.fn()}
+        onAgentQuestionChange={vi.fn()}
+        onAgentAsk={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/why sentinel is concerned/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /explain privilege change/i }));
+    expect(screen.getByText(/permissions or access levels changed/i)).toBeInTheDocument();
+    expect(screen.getByText(/^agent$/i)).toBeInTheDocument();
   });
 });

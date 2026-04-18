@@ -102,6 +102,7 @@ button:hover {
 
 .brand-block,
 .queue-panel,
+.mode-panel,
 .topbar,
 .card {
   background: var(--panel);
@@ -176,10 +177,50 @@ button:hover {
   cursor: pointer;
 }
 
+.nav-item:disabled {
+  transform: none;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .nav-item--active {
   background: linear-gradient(135deg, rgba(24, 51, 73, 0.96), rgba(47, 125, 99, 0.92));
   color: #fff8ef;
   border-color: transparent;
+}
+
+.mode-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mode-toggle__button {
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(18, 32, 51, 0.12);
+  background: rgba(255, 255, 255, 0.7);
+  color: #173045;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mode-toggle__button--active {
+  background: linear-gradient(135deg, rgba(24, 51, 73, 0.96), rgba(47, 125, 99, 0.92));
+  color: #fff8ef;
+  border-color: transparent;
+}
+
+.mode-panel__copy {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
 }
 
 .rail-heading,
@@ -253,6 +294,15 @@ button:hover {
   display: grid;
   grid-template-columns: 1.35fr 1fr;
   gap: 18px;
+}
+
+.simple-workflow {
+  display: grid;
+  gap: 18px;
+}
+
+.simple-card {
+  background: var(--panel-strong);
 }
 
 .card--hero-main,

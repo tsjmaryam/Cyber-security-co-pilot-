@@ -20,6 +20,7 @@ function logPage(event: string, payload?: unknown): void {
 }
 
 export default function Home() {
+  const [viewMode, setViewMode] = useState<"simple" | "expert">("simple");
   const [selectedView, setSelectedView] = useState<"active" | "audit">("active");
   const [queue, setQueue] = useState(fallbackQueue);
   const [queueError, setQueueError] = useState<string | null>(null);
@@ -43,6 +44,12 @@ export default function Home() {
   const [agentAnswer, setAgentAnswer] = useState<RecordShape | null>(null);
   const [agentLoading, setAgentLoading] = useState(false);
   const [agentError, setAgentError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (viewMode === "simple" && selectedView === "audit") {
+      setSelectedView("active");
+    }
+  }, [selectedView, viewMode]);
 
   async function refreshWorkspace(incidentId: string) {
     logPage("refresh_workspace_start", { incidentId });
@@ -245,22 +252,54 @@ export default function Home() {
             <p>Decision support with visible blind spots for non-expert operators.</p>
           </div>
 
-          <nav className="nav-stack">
-            <button
-              className={`nav-item${selectedView === "active" ? " nav-item--active" : ""}`}
-              onClick={() => setSelectedView("active")}
-              type="button"
-            >
-              Active incident
-            </button>
-            <button
-              className={`nav-item${selectedView === "audit" ? " nav-item--active" : ""}`}
-              onClick={() => setSelectedView("audit")}
-              type="button"
-            >
-              Audit trail
-            </button>
-          </nav>
+          <section className="mode-panel">
+            <div className="rail-heading">
+              <span>Workspace view</span>
+              <strong>{viewMode === "simple" ? "Simple" : "Expert"}</strong>
+            </div>
+            <div className="mode-toggle" role="tablist" aria-label="Workspace view mode">
+              <button
+                aria-selected={viewMode === "simple"}
+                className={`mode-toggle__button${viewMode === "simple" ? " mode-toggle__button--active" : ""}`}
+                onClick={() => setViewMode("simple")}
+                type="button"
+              >
+                Simple
+              </button>
+              <button
+                aria-selected={viewMode === "expert"}
+                className={`mode-toggle__button${viewMode === "expert" ? " mode-toggle__button--active" : ""}`}
+                onClick={() => setViewMode("expert")}
+                type="button"
+              >
+                Expert
+              </button>
+            </div>
+            <p className="mode-panel__copy">
+              {viewMode === "simple"
+                ? "Show the operator workflow only: what happened, what to do, alternatives, and blind spots."
+                : "Show deeper audit history, cyber context, and agent support for analyst review."}
+            </p>
+          </section>
+
+          {viewMode === "expert" ? (
+            <nav className="nav-stack">
+              <button
+                className={`nav-item${selectedView === "active" ? " nav-item--active" : ""}`}
+                onClick={() => setSelectedView("active")}
+                type="button"
+              >
+                Active incident
+              </button>
+              <button
+                className={`nav-item${selectedView === "audit" ? " nav-item--active" : ""}`}
+                onClick={() => setSelectedView("audit")}
+                type="button"
+              >
+                Audit trail
+              </button>
+            </nav>
+          ) : null}
 
           <QueuePanel
             queue={queue}
@@ -274,6 +313,7 @@ export default function Home() {
           {selectedView === "active" ? (
             <ActiveIncidentView
               viewModel={viewModel}
+              viewMode={viewMode}
               incidentLoading={incidentLoading}
               incidentError={incidentError}
               actionMessage={actionMessage}
