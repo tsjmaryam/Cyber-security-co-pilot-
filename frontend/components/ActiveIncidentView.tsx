@@ -74,6 +74,7 @@ export function ActiveIncidentView({
               <span className="card-kicker">A. What happened?</span>
               <StatusPill tone="critical">Incident</StatusPill>
             </div>
+            <p className="issue-number">Issue #{viewModel.incidentId}</p>
             <h3>{viewModel.title}</h3>
             <p>{viewModel.summary}</p>
             <div className="timeline-inline">

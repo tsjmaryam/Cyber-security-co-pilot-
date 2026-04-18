@@ -478,6 +478,121 @@ button:hover {
   line-height: 1.5;
 }
 
+.issue-number {
+  margin: 10px 0 6px;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #415263;
+}
+
+.report-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 32, 51, 0.34);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 50;
+}
+
+.report-modal {
+  width: min(760px, 100%);
+  max-height: min(88vh, 900px);
+  overflow: auto;
+  background: rgba(255, 252, 246, 0.98);
+  border: 1px solid rgba(18, 32, 51, 0.1);
+  border-radius: 28px;
+  box-shadow: 0 30px 80px rgba(18, 32, 51, 0.24);
+  padding: 24px;
+}
+
+.report-modal__header,
+.report-modal__actions,
+.report-preview__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.report-modal__header h3 {
+  margin: 8px 0 0;
+  font-size: 1.6rem;
+  letter-spacing: -0.03em;
+}
+
+.report-modal__close {
+  border: 1px solid rgba(18, 32, 51, 0.12);
+  background: rgba(255, 255, 255, 0.76);
+  border-radius: 14px;
+  padding: 10px 14px;
+  color: #183349;
+}
+
+.report-modal__loading {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  gap: 18px;
+}
+
+.report-spinner {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 4px solid rgba(24, 51, 73, 0.12);
+  border-top-color: #2f7d63;
+  animation: report-spin 900ms linear infinite;
+}
+
+.report-preview {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.report-preview__meta {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  color: #546678;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.report-section {
+  border-radius: 18px;
+  border: 1px solid rgba(18, 32, 51, 0.08);
+  background: rgba(255, 255, 255, 0.66);
+  padding: 16px 18px;
+}
+
+.report-section h4,
+.report-section h5 {
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+}
+
+.report-section p,
+.report-section li {
+  line-height: 1.6;
+}
+
+.report-section ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+@keyframes report-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .signal-list {
   margin: 18px 0 0;
   padding: 0;

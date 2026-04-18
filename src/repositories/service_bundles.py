@@ -7,6 +7,7 @@ from .decision_support_repo import DecisionSupportResultsRepository
 from .detector_repo import DetectorRepository
 from .evidence_repo import EvidenceRepository
 from .incident_notification_repo import IncidentNotificationRepository
+from .incident_report_repo import IncidentReportRepository
 from .incidents_repo import IncidentsRepository
 from .operator_decision_repo import OperatorDecisionRepository
 from .policy_repo import PolicyRepository
@@ -115,10 +116,14 @@ class CoverageReviewRepositoryBundle:
 @dataclass
 class OperatorDecisionRepositoryBundle:
     operator_decision_repo: OperatorDecisionRepository
+    incident_report_repo: IncidentReportRepository
 
     @classmethod
     def from_connection_factory(cls, connection_factory: Callable[[], Any]) -> "OperatorDecisionRepositoryBundle":
-        return cls(operator_decision_repo=OperatorDecisionRepository(connection_factory))
+        return cls(
+            operator_decision_repo=OperatorDecisionRepository(connection_factory),
+            incident_report_repo=IncidentReportRepository(connection_factory),
+        )
 
     def save_operator_decision(self, **kwargs):
         self.operator_decision_repo.save_operator_decision(**kwargs)
@@ -134,6 +139,12 @@ class OperatorDecisionRepositoryBundle:
 
     def fetch_recent_review_events(self, incident_id: str, limit: int = 10):
         return self.operator_decision_repo.fetch_recent_review_events(incident_id, limit)
+
+    def save_incident_report(self, **kwargs):
+        self.incident_report_repo.save_report(**kwargs)
+
+    def fetch_latest_incident_report(self, incident_id: str, report_kind: str = "approval_summary"):
+        return self.incident_report_repo.fetch_latest_report(incident_id, report_kind)
 
 
 @dataclass

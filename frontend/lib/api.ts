@@ -4,6 +4,7 @@ import type {
   CoverageReviewResponse,
   DecisionSupportResponse,
   IncidentContextResponse,
+  IncidentReportResponse,
   IncidentListResponse,
   IncidentWorkspaceResponse,
   OperatorActionResponse,
@@ -114,6 +115,15 @@ export async function postApprove(
     body: JSON.stringify(payload),
   });
   return response.result;
+}
+
+export async function getLatestReport(incidentId: string): Promise<RecordShape | null> {
+  const response = await fetchJson<IncidentReportResponse>(API_BASE_URL, `/incidents/${incidentId}/report/latest`);
+  return response.report ?? null;
+}
+
+export function buildReportPrintUrl(incidentId: string): string {
+  return `${API_BASE_URL}/incidents/${incidentId}/report/latest/print`;
 }
 
 export async function postAlternative(

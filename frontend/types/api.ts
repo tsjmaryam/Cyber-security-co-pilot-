@@ -25,6 +25,10 @@ export interface OperatorActionResponse {
   result: RecordShape;
 }
 
+export interface IncidentReportResponse {
+  report: RecordShape | null;
+}
+
 export interface OperatorHistoryResponse {
   latest_decision: RecordShape | null;
   recent_decisions: RecordShape[];

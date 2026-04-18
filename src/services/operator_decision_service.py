@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from src.logging_utils import get_logger
+from .incident_report_service import IncidentReportService
 from .coverage_review_service import CoverageReviewAppService
 
 logger = get_logger(__name__)
@@ -13,12 +14,15 @@ class OperatorDecisionRepositoryBundle(Protocol):
     def save_operator_decision(self, **kwargs) -> None: ...
     def save_review_event(self, **kwargs) -> None: ...
     def fetch_latest_operator_decision(self, incident_id: str) -> dict[str, Any] | None: ...
+    def save_incident_report(self, **kwargs) -> None: ...
+    def fetch_latest_incident_report(self, incident_id: str, report_kind: str = "approval_summary") -> dict[str, Any] | None: ...
 
 
 @dataclass
 class OperatorDecisionAppService:
     repositories: OperatorDecisionRepositoryBundle
     coverage_review_service: CoverageReviewAppService
+    incident_report_service: IncidentReportService | None = None
 
     def approve_recommendation(
         self,
@@ -43,11 +47,21 @@ class OperatorDecisionAppService:
             coverage_review=review,
             decision_support_result=_decision_support_snapshot(review),
         )
+        report = self._save_approval_report(
+            incident_id=incident_id,
+            review=review,
+            chosen_action=recommended,
+            rationale=rationale,
+            actor=actor,
+            used_double_check=used_double_check,
+            decision_type="approve_recommendation",
+        )
         return {
             "incident_id": incident_id,
             "decision_type": "approve_recommendation",
             "chosen_action": recommended,
             "used_double_check": used_double_check,
+            "report": report,
         }
 
     def choose_alternative(
@@ -156,6 +170,47 @@ class OperatorDecisionAppService:
             "double_check_candidates": review["double_check"]["candidates"],
             "used_double_check": used_double_check,
         }
+
+    def fetch_latest_report(self, incident_id: str, report_kind: str = "approval_summary") -> dict[str, Any] | None:
+        return self.repositories.fetch_latest_incident_report(incident_id, report_kind=report_kind)
+
+    def _save_approval_report(
+        self,
+        *,
+        incident_id: str,
+        review: dict[str, Any],
+        chosen_action: dict[str, Any],
+        rationale: str | None,
+        actor: dict[str, Any] | None,
+        used_double_check: bool,
+        decision_type: str,
+    ) -> dict[str, Any]:
+        report_service = self.incident_report_service or IncidentReportService()
+        rendered = report_service.build_approval_report(
+            incident_id=incident_id,
+            coverage_review=review,
+            chosen_action=chosen_action,
+            rationale=rationale,
+            actor=actor,
+            used_double_check=used_double_check,
+        )
+        self.repositories.save_incident_report(
+            incident_id=incident_id,
+            report_kind="approval_summary",
+            source_decision_type=decision_type,
+            summary=rendered["summary"],
+            html_content=rendered["html"],
+        )
+        self.repositories.save_review_event(
+            incident_id=incident_id,
+            event_type="approval_report_generated",
+            payload={
+                "report_kind": "approval_summary",
+                "generated_at": rendered["summary"]["generated_at"],
+            },
+            actor=actor,
+        )
+        return rendered["summary"]
 
 
 def _select_action(actions: list[dict[str, Any]], action_id: str) -> dict[str, Any] | None:

@@ -17,6 +17,7 @@ from src.repositories.service_bundles import (
 from src.services.alerting_service import AlertingService, ResendConfig
 from src.services.coverage_review_service import CoverageReviewAppService
 from src.services.decision_support_app_service import DecisionSupportAppService
+from src.services.incident_report_service import IncidentReportService
 from src.services.operator_decision_service import OperatorDecisionAppService
 
 from .knowledge_base import KnowledgeBaseRepository
@@ -58,7 +59,11 @@ def get_coverage_review_service() -> CoverageReviewAppService:
 def get_operator_decision_service() -> OperatorDecisionAppService:
     repos = OperatorDecisionRepositoryBundle.from_connection_factory(get_connection_factory())
     coverage_review_service = get_coverage_review_service()
-    return OperatorDecisionAppService(repositories=repos, coverage_review_service=coverage_review_service)
+    return OperatorDecisionAppService(
+        repositories=repos,
+        coverage_review_service=coverage_review_service,
+        incident_report_service=IncidentReportService(),
+    )
 
 
 def get_operator_decision_repositories() -> OperatorDecisionRepositoryBundle:

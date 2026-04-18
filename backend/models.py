@@ -70,3 +70,7 @@ class OperatorHistoryResponse(BaseModel):
     latest_decision: dict[str, Any] | None = None
     recent_decisions: list[dict[str, Any]]
     review_events: list[dict[str, Any]]
+
+
+class IncidentReportResponse(BaseModel):
+    report: dict[str, Any] | None = None

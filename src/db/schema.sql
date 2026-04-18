@@ -131,3 +131,15 @@ CREATE TABLE IF NOT EXISTS incident_notifications (
 );
 
 CREATE INDEX IF NOT EXISTS idx_incident_notifications_incident_id ON incident_notifications(incident_id);
+
+CREATE TABLE IF NOT EXISTS incident_reports (
+    incident_report_id BIGSERIAL PRIMARY KEY,
+    incident_id TEXT NOT NULL REFERENCES incidents(incident_id) ON DELETE CASCADE,
+    report_kind TEXT NOT NULL,
+    source_decision_type TEXT,
+    summary_json JSONB NOT NULL,
+    html_content TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_incident_reports_incident_id ON incident_reports(incident_id);

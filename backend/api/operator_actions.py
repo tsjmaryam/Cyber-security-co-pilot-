@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import HTMLResponse
 
 from backend.dependencies import as_http_exception, get_operator_decision_repositories, get_operator_decision_service
-from backend.models import AlternativeActionRequest, OperatorActionRequest, OperatorActionResponse, OperatorHistoryResponse
+from backend.models import AlternativeActionRequest, IncidentReportResponse, OperatorActionRequest, OperatorActionResponse, OperatorHistoryResponse
 from src.repositories.service_bundles import OperatorDecisionRepositoryBundle
 from src.services.operator_decision_service import OperatorDecisionAppService
 
@@ -20,6 +21,29 @@ def get_operator_history(
         recent_decisions=repositories.fetch_recent_operator_decisions(incident_id, limit=10),
         review_events=repositories.fetch_recent_review_events(incident_id, limit=10),
     )
+
+
+@router.get("/report/latest", response_model=IncidentReportResponse)
+def get_latest_report(
+    incident_id: str,
+    repositories: OperatorDecisionRepositoryBundle = Depends(get_operator_decision_repositories),
+) -> IncidentReportResponse:
+    report = repositories.fetch_latest_incident_report(incident_id)
+    if report is None:
+        raise as_http_exception(ValueError(f"Report not found: {incident_id}"))
+    payload = report.get("summary_json", report)
+    return IncidentReportResponse(report=payload)
+
+
+@router.get("/report/latest/print", response_class=HTMLResponse)
+def print_latest_report(
+    incident_id: str,
+    repositories: OperatorDecisionRepositoryBundle = Depends(get_operator_decision_repositories),
+) -> HTMLResponse:
+    report = repositories.fetch_latest_incident_report(incident_id)
+    if report is None:
+        raise as_http_exception(ValueError(f"Report not found: {incident_id}"))
+    return HTMLResponse(content=str(report["html_content"]))
 
 
 @router.post("/approve", response_model=OperatorActionResponse)

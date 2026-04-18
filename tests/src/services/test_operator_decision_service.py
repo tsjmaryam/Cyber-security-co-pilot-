@@ -6,6 +6,7 @@ class FakeOperatorBundle:
     def __init__(self):
         self.saved_decisions = []
         self.saved_events = []
+        self.saved_reports = []
 
     def fetch_incident(self, incident_id: str):
         return {
@@ -65,6 +66,12 @@ class FakeOperatorBundle:
     def fetch_latest_operator_decision(self, incident_id: str):
         return self.saved_decisions[-1] if self.saved_decisions else None
 
+    def save_incident_report(self, **kwargs):
+        self.saved_reports.append(kwargs)
+
+    def fetch_latest_incident_report(self, incident_id: str, report_kind: str = "approval_summary"):
+        return self.saved_reports[-1] if self.saved_reports else None
+
 
 class FakeDecisionSupportGenerator:
     def generate_for_incident(self, incident_id: str, policy_version: str | None = None):
@@ -88,6 +95,8 @@ def test_operator_can_approve_recommendation_with_snapshot():
     assert result["chosen_action"]["action_id"] == "reset_credentials"
     assert bundle.saved_decisions[-1]["selected_from"] == "recommended"
     assert bundle.saved_decisions[-1]["coverage_review"]["recommendation_may_be_incomplete"] is True
+    assert result["report"]["incident_id"] == "INC-OP-1"
+    assert bundle.saved_reports[-1]["report_kind"] == "approval_summary"
 
 
 def test_operator_can_choose_alternative():

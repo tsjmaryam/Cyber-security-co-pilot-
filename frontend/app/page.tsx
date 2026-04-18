@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { ActiveIncidentView } from "@/components/ActiveIncidentView";
 import { AuditTrailView } from "@/components/AuditTrailView";
 import { QueuePanel } from "@/components/QueuePanel";
-import { ApiError, getAgentAuth, listIncidents, loadIncidentWorkspace, postAgentQuery, postAlternative, postApprove, postDoubleCheck, postEscalate } from "@/lib/api";
+import { ReportModal } from "@/components/ReportModal";
+import { ApiError, buildReportPrintUrl, getAgentAuth, listIncidents, loadIncidentWorkspace, postAgentQuery, postAlternative, postApprove, postDoubleCheck, postEscalate } from "@/lib/api";
 import { buildIncidentViewModel, mapQueueItem } from "@/lib/view-model";
 import type { OperatorHistoryResponse, RecordShape } from "@/types/api";
 
@@ -45,12 +46,11 @@ export default function Home() {
   const [agentAnswer, setAgentAnswer] = useState<RecordShape | null>(null);
   const [agentLoading, setAgentLoading] = useState(false);
   const [agentError, setAgentError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (viewMode === "simple" && selectedView === "audit") {
-      setSelectedView("active");
-    }
-  }, [selectedView, viewMode]);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [generatedReport, setGeneratedReport] = useState<RecordShape | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const effectiveSelectedView = viewMode === "simple" ? "active" : selectedView;
 
   async function refreshWorkspace(incidentId: string) {
     logPage("refresh_workspace_start", { incidentId });
@@ -186,6 +186,12 @@ export default function Home() {
     setActionLoading(true);
     setActionMessage(null);
     setIncidentError(null);
+    if (action === "approve") {
+      setReportModalOpen(true);
+      setReportLoading(true);
+      setGeneratedReport(null);
+      setReportError(null);
+    }
     try {
       logPage("run_action_start", { action, selectedIncidentId, selectedAlternativeId, rationale });
       let result: RecordShape;
@@ -219,12 +225,23 @@ export default function Home() {
       setActionMessage(
         `Human decision recorded: ${normalizedDecisionType} -> ${chosenLabel}.${normalizedRationale ? ` Rationale saved: ${normalizedRationale}` : " No rationale recorded."}`,
       );
+      if (action === "approve") {
+        const report = result.report && typeof result.report === "object" ? (result.report as RecordShape) : null;
+        setGeneratedReport(report);
+        setReportError(report ? null : "Sentinel could not load the generated report.");
+      }
       await refreshWorkspace(selectedIncidentId);
     } catch (error) {
       console.error("[frontend/page] run_action_failed", { action, selectedIncidentId, error });
       setIncidentError(error instanceof ApiError ? error.message : "Could not record operator action.");
+      if (action === "approve") {
+        setReportError(error instanceof ApiError ? error.message : "Could not generate the approval report.");
+      }
     } finally {
       setActionLoading(false);
+      if (action === "approve") {
+        setReportLoading(false);
+      }
     }
   }
 
@@ -245,6 +262,11 @@ export default function Home() {
     }
   }
 
+  function handlePrintReport() {
+    if (!selectedIncidentId.startsWith("incident_")) return;
+    window.open(buildReportPrintUrl(selectedIncidentId), "_blank", "noopener,noreferrer");
+  }
+
   return (
     <main className="sentinel-shell">
       <div className="app-frame reveal reveal-delay-1">
@@ -262,7 +284,7 @@ export default function Home() {
             </div>
             <div className="mode-toggle" role="tablist" aria-label="Workspace view mode">
               <button
-                aria-selected={viewMode === "simple"}
+                aria-pressed={viewMode === "simple"}
                 className={`mode-toggle__button${viewMode === "simple" ? " mode-toggle__button--active" : ""}`}
                 onClick={() => setViewMode("simple")}
                 type="button"
@@ -270,7 +292,7 @@ export default function Home() {
                 Simple
               </button>
               <button
-                aria-selected={viewMode === "expert"}
+                aria-pressed={viewMode === "expert"}
                 className={`mode-toggle__button${viewMode === "expert" ? " mode-toggle__button--active" : ""}`}
                 onClick={() => setViewMode("expert")}
                 type="button"
@@ -313,7 +335,7 @@ export default function Home() {
         </aside>
 
         <section className="workspace">
-          {selectedView === "active" ? (
+          {effectiveSelectedView === "active" ? (
             <ActiveIncidentView
               viewModel={viewModel}
               rawLogs={incidentEvents}
@@ -346,6 +368,14 @@ export default function Home() {
           )}
         </section>
       </div>
+      <ReportModal
+        error={reportError}
+        loading={reportLoading}
+        onClose={() => setReportModalOpen(false)}
+        onPrint={handlePrintReport}
+        open={reportModalOpen}
+        report={generatedReport}
+      />
     </main>
   );
 }
