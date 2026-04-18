@@ -15,6 +15,7 @@ from sklearn.metrics import average_precision_score, classification_report, roc_
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import FunctionTransformer
 
 from .weak_label import apply_weak_labels, load_label_rules
 
@@ -58,6 +59,10 @@ CATEGORICAL_FEATURES = [
     "last_event_name",
     "top_event_name",
 ]
+
+
+def _boolean_to_float(values):
+    return values.astype(float)
 
 
 def main() -> int:
@@ -126,7 +131,14 @@ def train_incident_model(labeled: pd.DataFrame, artifact_path: Path) -> tuple[di
     )
     boolean_transformer = Pipeline(
         steps=[
-            ("imputer", SimpleImputer(strategy="constant", fill_value=False)),
+            (
+                "cast",
+                FunctionTransformer(
+                    _boolean_to_float,
+                    feature_names_out="one-to-one",
+                ),
+            ),
+            ("imputer", SimpleImputer(strategy="constant", fill_value=0.0)),
         ]
     )
     categorical_transformer = Pipeline(
