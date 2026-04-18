@@ -7,3 +7,6 @@ PyYAML
 scikit-learn
 joblib
 psycopg[binary]
+httpx
+pytest
+pgembed

@@ -24,7 +24,7 @@ def build_incidents(events: pd.DataFrame, incident_gap_minutes: int, ordered_seq
         | gap_seconds.isna()
         | gap_seconds.gt(incident_gap_minutes * 60)
     )
-    frame["incident_group_id"] = new_incident.cumsum().astype("Int64")
+    frame["incident_group_id"] = new_incident.astype("int64").cumsum().astype("Int64")
 
     grouped = frame.groupby("incident_group_id", sort=False, dropna=False)
     incidents = grouped.agg(

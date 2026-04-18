@@ -60,6 +60,26 @@ To run the FastAPI backend as the HTTP wrapper around the shared service layer:
 uvicorn backend.main:app --reload
 ```
 
+To start the local backend service with one command on Windows PowerShell:
+
+```powershell
+.\scripts\start_local.ps1
+```
+
+To also start the MCP server:
+
+```powershell
+.\scripts\start_local.ps1 -IncludeMcpServer
+```
+
+To stop the locally started services:
+
+```powershell
+.\scripts\stop_local.ps1
+```
+
+The startup script writes logs and PID/state metadata under `.local/services/`.
+
 To build the operator-facing coverage review object that emphasizes blind spots and double-check paths:
 
 ```bash
