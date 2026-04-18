@@ -26,6 +26,7 @@ export function ActiveIncidentView({
   onAlternative,
   onDoubleCheck,
   onEscalate,
+  onViewLatestReport,
   onAgentQuestionChange,
   onAgentAsk,
 }: {
@@ -49,6 +50,7 @@ export function ActiveIncidentView({
   onAlternative: () => void;
   onDoubleCheck: () => void;
   onEscalate: () => void;
+  onViewLatestReport: () => void;
   onAgentQuestionChange: (value: string) => void;
   onAgentAsk: () => void;
 }) {
@@ -207,6 +209,9 @@ export function ActiveIncidentView({
               </button>
               <button className="cta cta--secondary" disabled={actionLoading} onClick={onEscalate} type="button">
                 Escalate
+              </button>
+              <button className="cta cta--secondary" disabled={actionLoading} onClick={onViewLatestReport} type="button">
+                View latest report
               </button>
             </div>
           </article>
@@ -452,6 +457,9 @@ export function ActiveIncidentView({
             </button>
             <button className="cta cta--secondary" disabled={actionLoading} onClick={onEscalate} type="button">
               Escalate
+            </button>
+            <button className="cta cta--secondary" disabled={actionLoading} onClick={onViewLatestReport} type="button">
+              View latest report
             </button>
           </div>
           {viewModel.doubleCheckCandidates.length ? (

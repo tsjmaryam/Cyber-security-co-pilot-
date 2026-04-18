@@ -7,16 +7,10 @@ import { ActiveIncidentView } from "@/components/ActiveIncidentView";
 import { AuditTrailView } from "@/components/AuditTrailView";
 import { QueuePanel } from "@/components/QueuePanel";
 import { ReportModal } from "@/components/ReportModal";
-import { ApiError, downloadReportPdf, getAgentAuth, listIncidents, loadIncidentWorkspace, postAgentQuery, postAlternative, postApprove, postDoubleCheck, postEscalate } from "@/lib/api";
+import { ApiError, downloadReportPdf, getAgentAuth, getLatestReport, listIncidents, loadIncidentWorkspace, postAgentQuery, postAlternative, postApprove, postDoubleCheck, postEscalate } from "@/lib/api";
 import { buildIncidentViewModel, mapQueueItem } from "@/lib/view-model";
 import type { QueueItem } from "@/lib/view-model";
 import type { OperatorHistoryResponse, RecordShape } from "@/types/api";
-
-const fallbackQueue: QueueItem[] = [
-  { id: "INC-1042", label: "INC-1042", site: "Water Plant East", severity: "High", timestamp: null, state: "Needs review" },
-  { id: "INC-1038", label: "INC-1038", site: "County Records", severity: "Medium", timestamp: null, state: "Monitoring" },
-  { id: "INC-1033", label: "INC-1033", site: "City Hospital Annex", severity: "Low", timestamp: null, state: "Closed" },
-];
 
 function logPage(event: string, payload?: unknown): void {
   console.info(`[frontend/page] ${event}`, payload ?? "");
@@ -25,9 +19,10 @@ function logPage(event: string, payload?: unknown): void {
 export default function Home() {
   const [viewMode, setViewMode] = useState<"simple" | "expert">("simple");
   const [selectedView, setSelectedView] = useState<"active" | "audit">("active");
-  const [queue, setQueue] = useState(fallbackQueue);
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [queueLoading, setQueueLoading] = useState(true);
   const [queueError, setQueueError] = useState<string | null>(null);
-  const [selectedIncidentId, setSelectedIncidentId] = useState<string>(fallbackQueue[0].id);
+  const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(null);
   const [incident, setIncident] = useState<RecordShape | null>(null);
   const [incidentEvents, setIncidentEvents] = useState<RecordShape[]>([]);
   const [evidencePackage, setEvidencePackage] = useState<RecordShape | null>(null);
@@ -83,20 +78,30 @@ export default function Home() {
     let cancelled = false;
 
     async function loadQueue() {
+      setQueueLoading(true);
       try {
         logPage("load_queue_start");
         const result = await listIncidents();
         logPage("load_queue_result", { count: result.length, incidents: result });
-        if (cancelled || result.length === 0) return;
+        if (cancelled) return;
         const mapped = result.map(mapQueueItem);
         logPage("load_queue_mapped", mapped);
         setQueue(mapped);
-        setSelectedIncidentId(mapped[0].id);
+        setSelectedIncidentId((current) => {
+          if (current && mapped.some((item) => item.id === current)) return current;
+          return mapped[0]?.id ?? null;
+        });
         setQueueError(null);
       } catch (error) {
         if (cancelled) return;
         console.error("[frontend/page] load_queue_failed", error);
+        setQueue([]);
+        setSelectedIncidentId(null);
         setQueueError(error instanceof ApiError ? error.message : "Could not load incidents.");
+      } finally {
+        if (!cancelled) {
+          setQueueLoading(false);
+        }
       }
     }
 
@@ -110,8 +115,18 @@ export default function Home() {
     let cancelled = false;
 
     async function loadDetails() {
-      if (!selectedIncidentId.startsWith("incident_")) {
-        logPage("skip_load_details_for_fallback_incident", { selectedIncidentId });
+      if (!selectedIncidentId) {
+        logPage("skip_load_details_no_selection");
+        setIncident(null);
+        setIncidentEvents([]);
+        setEvidencePackage(null);
+        setDetectorResult(null);
+        setCoverageAssessment(null);
+        setDecisionSupportResult(null);
+        setDecisionSupport(null);
+        setCoverageReview(null);
+        setOperatorHistory(null);
+        setIncidentError(null);
         return;
       }
       setIncidentLoading(true);
@@ -143,7 +158,11 @@ export default function Home() {
     }
 
     async function loadAgentAuthState() {
-      if (!selectedIncidentId.startsWith("incident_")) return;
+      if (!selectedIncidentId) {
+        setAgentAuth(null);
+        setAgentError(null);
+        return;
+      }
       try {
         logPage("load_agent_auth_start", { selectedIncidentId });
         const result = await getAgentAuth(selectedIncidentId);
@@ -178,13 +197,13 @@ export default function Home() {
         decisionSupport,
         coverageReview,
         operatorHistory,
-        selectedIncidentId,
+        selectedIncidentId ?? "incident",
       ),
     [coverageAssessment, coverageReview, decisionSupport, decisionSupportResult, detectorResult, evidencePackage, incident, operatorHistory, selectedIncidentId],
   );
 
   async function runAction(action: "approve" | "alternative" | "escalate" | "double-check") {
-    if (!selectedIncidentId.startsWith("incident_")) return;
+    if (!selectedIncidentId) return;
     if (action === "approve" && !rationale.trim()) {
       setIncidentError("Add a short explanation in 'Why are you taking this action?' before approving.");
       setReportModalOpen(false);
@@ -253,7 +272,7 @@ export default function Home() {
   }
 
   async function runAgentQuery() {
-    if (!selectedIncidentId.startsWith("incident_") || !agentQuestion.trim()) return;
+    if (!selectedIncidentId || !agentQuestion.trim()) return;
     setAgentLoading(true);
     setAgentError(null);
     try {
@@ -270,11 +289,31 @@ export default function Home() {
   }
 
   async function handlePrintReport() {
-    if (!selectedIncidentId.startsWith("incident_")) return;
+    if (!selectedIncidentId) return;
     try {
       await downloadReportPdf(selectedIncidentId);
     } catch (error) {
       setReportError(error instanceof ApiError ? error.message : "Could not download the PDF report.");
+    }
+  }
+
+  async function handleViewLatestReport() {
+    if (!selectedIncidentId) return;
+    setReportModalOpen(true);
+    setReportLoading(true);
+    setGeneratedReport(null);
+    setReportError(null);
+    try {
+      logPage("load_latest_report_start", { selectedIncidentId });
+      const report = await getLatestReport(selectedIncidentId);
+      logPage("load_latest_report_success", { selectedIncidentId, hasReport: Boolean(report) });
+      setGeneratedReport(report);
+      setReportError(report ? null : "Sentinel could not load the latest report.");
+    } catch (error) {
+      console.error("[frontend/page] load_latest_report_failed", { selectedIncidentId, error });
+      setReportError(error instanceof ApiError ? error.message : "Could not load the latest report.");
+    } finally {
+      setReportLoading(false);
     }
   }
 
@@ -343,13 +382,16 @@ export default function Home() {
           <QueuePanel
             queue={queue}
             selectedIncidentId={selectedIncidentId}
+            queueLoading={queueLoading}
             queueError={queueError}
             onSelectIncident={setSelectedIncidentId}
           />
         </aside>
 
         <section className="workspace">
-          {effectiveSelectedView === "active" ? (
+          {!selectedIncidentId && !queueLoading ? (
+            <div className="warning-banner">No incidents are currently available.</div>
+          ) : effectiveSelectedView === "active" ? (
             <ActiveIncidentView
               viewModel={viewModel}
               rawLogs={incidentEvents}
@@ -371,6 +413,7 @@ export default function Home() {
               onAlternative={() => void runAction("alternative")}
               onDoubleCheck={() => void runAction("double-check")}
               onEscalate={() => void runAction("escalate")}
+              onViewLatestReport={() => void handleViewLatestReport()}
               onAgentQuestionChange={setAgentQuestion}
               onAgentAsk={() => void runAgentQuery()}
             />

@@ -13,6 +13,7 @@ describe("QueuePanel", () => {
           { id: "incident_2", label: "INC-1038", site: "site-b", severity: "Low", timestamp: null, state: "Closed" },
         ]}
         selectedIncidentId="incident_1"
+        queueLoading={false}
         queueError={null}
         onSelectIncident={onSelectIncident}
       />,

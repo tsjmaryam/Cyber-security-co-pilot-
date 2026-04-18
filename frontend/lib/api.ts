@@ -76,7 +76,7 @@ async function fetchJson<T>(baseUrl: string, path: string, init?: RequestInit): 
 }
 
 export async function listIncidents(limit = 25): Promise<RecordShape[]> {
-  const response = await fetchJson<IncidentListResponse>(API_BASE_URL, `/incidents/?limit=${limit}`);
+  const response = await fetchJson<IncidentListResponse>(API_BASE_URL, `/incidents?limit=${limit}`);
   return response.incidents;
 }
 

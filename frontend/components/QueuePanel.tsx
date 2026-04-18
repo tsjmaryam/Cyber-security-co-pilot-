@@ -5,11 +5,13 @@ import type { QueueItem } from "@/lib/view-model";
 export function QueuePanel({
   queue,
   selectedIncidentId,
+  queueLoading,
   queueError,
   onSelectIncident,
 }: {
   queue: QueueItem[];
-  selectedIncidentId: string;
+  selectedIncidentId: string | null;
+  queueLoading: boolean;
   queueError: string | null;
   onSelectIncident: (incidentId: string) => void;
 }) {
@@ -19,6 +21,7 @@ export function QueuePanel({
         <span>Incident queue</span>
         <strong>{queue.length} loaded</strong>
       </div>
+      {queueLoading ? <p className="queue-error">Loading incidents...</p> : null}
       {queueError ? <p className="queue-error">{queueError}</p> : null}
       <div className="queue-list">
         {queue.map((item) => (
