@@ -6,3 +6,4 @@ pyarrow
 PyYAML
 scikit-learn
 joblib
+psycopg[binary]

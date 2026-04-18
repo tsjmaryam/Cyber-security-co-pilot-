@@ -34,6 +34,8 @@ To generate non-expert-facing decision support for a scored incident:
 python -c "from src.decision_support_bridge import generate_decision_support_for_incident; import json; print(json.dumps(generate_decision_support_for_incident('incident_000000001', project_root='.'), indent=2))"
 ```
 
+To use the Postgres-ready application layer, create the schema from [`src/db/schema.sql`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/src/db/schema.sql), store incident context, evidence packages, detector results, coverage assessments, and policy snapshots, then call the app service around the pure `decision_support` package.
+
 Default config lives in `configs/pipeline_config.yaml` and behavioral flag rules live in `configs/event_flag_rules.yaml`.
 
 ## Outputs
@@ -54,6 +56,7 @@ Default config lives in `configs/pipeline_config.yaml` and behavioral flag rules
 - `.doc/cyber_knowledge_base_features.csv`
 - `.doc/cyber_knowledge_base_patterns.md`
 - `configs/decision_policy.yaml`
+- `src/db/schema.sql`
 
 ## Structure
 
@@ -67,5 +70,8 @@ Default config lives in `configs/pipeline_config.yaml` and behavioral flag rules
 - `src/train_model.py`: trains and scores the baseline incident suspicion model
 - `src/cyber_fraudlens_adapter.py`: FraudLens-style scoring and explanation adapter for incident review
 - `src/decision_support_bridge.py`: converts scored incidents into decision-support inputs and calls the standalone service
+- `src/db/`: Postgres connection utilities and starter schema
+- `src/repositories/`: Postgres repository layer for incident context, evidence packages, detector outputs, policy snapshots, and saved decision-support results
+- `src/services/decision_support_app_service.py`: application service that assembles DB records into the pure decision-support inputs
 - `decision_support/`: standalone package for deterministic non-expert decision guidance
 - `notebooks/sanity_checks.ipynb`: starter notebook for quick inspection
