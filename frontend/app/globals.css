@@ -134,6 +134,26 @@ button:hover {
   font-weight: 700;
 }
 
+.brand-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.brand-title-stack {
+  min-width: 0;
+}
+
+.brand-header .eyebrow {
+  margin: 0;
+}
+
+.brand-title-stack h1 {
+  margin: 6px 0 0;
+}
+
 .brand-block h1 {
   font-size: 2rem;
   line-height: 1;
@@ -143,7 +163,7 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .brand-logo {

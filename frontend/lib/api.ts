@@ -17,7 +17,7 @@ function normalizeBaseUrl(value: string | undefined, fallback: string): string {
 }
 
 const API_BASE_URL = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL, "/api/core");
-const AGENT_BASE_URL = normalizeBaseUrl(process.env.NEXT_PUBLIC_AGENT_API_BASE_URL, "/api/agent");
+const AGENT_BASE_URL = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL, "/api/agent");
 
 function logApi(event: string, payload?: unknown): void {
   console.info(`[frontend/api] ${event}`, payload ?? "");

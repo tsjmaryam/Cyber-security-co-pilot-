@@ -586,10 +586,15 @@ function buildPlainLanguageConcernSummary(signals: string[], eventSequence: stri
 }
 
 function buildTimelineSubject(incidentRecord: RecordShape): string {
+  const incidentId = asOptionalString(incidentRecord.incident_id);
+  if (incidentId) {
+    return `issue ${incidentId}`;
+  }
+
   const primaryActor = asRecord(incidentRecord.primary_actor);
   const actorKey = asOptionalString(primaryActor.actor_key);
   if (actorKey) {
-    return actorKey;
+    return humanizeActorKey(actorKey);
   }
 
   const entities = asRecord(incidentRecord.entities);
@@ -599,6 +604,16 @@ function buildTimelineSubject(incidentRecord: RecordShape): string {
   }
 
   return "this incident";
+}
+
+function humanizeActorKey(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "this incident";
+  const arnMatch = trimmed.match(/[:/]([^:/]+)$/);
+  if (arnMatch?.[1]) {
+    return arnMatch[1];
+  }
+  return trimmed;
 }
 
 function humanizeTimelineEvent(value: string): string {

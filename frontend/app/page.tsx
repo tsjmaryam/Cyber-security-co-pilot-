@@ -322,11 +322,15 @@ export default function Home() {
       <div className="app-frame reveal reveal-delay-1">
         <aside className="left-rail">
           <div className="brand-block">
-            <div className="brand-mark">
-              <Image alt="Sentinel logo" className="brand-logo" priority src="/logo.png" width={96} height={96} />
+            <div className="brand-header">
+              <div className="brand-mark">
+                <Image alt="Sentinel logo" className="brand-logo" priority src="/logo.png" width={96} height={96} />
+              </div>
+              <div className="brand-title-stack">
+                <p className="eyebrow">Sentinel</p>
+                <h1>Operator Console</h1>
+              </div>
             </div>
-            <p className="eyebrow">Sentinel</p>
-            <h1>Operator Console</h1>
             <p>Decision support with visible blind spots for non-expert operators.</p>
           </div>
 
