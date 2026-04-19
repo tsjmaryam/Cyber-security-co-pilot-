@@ -1,6 +1,10 @@
-# Cyber Security Co-Pilot
+<p align="center">
+  <img src="frontend/public/logo.png" alt="Sentinel logo" width="160" />
+</p>
 
-Cyber Security Co-Pilot is a human-in-the-loop incident response system for cloud security.
+# Sentinel: Cyber Security Co-Pilot
+
+Sentinel is a human-in-the-loop incident response system for cloud security.
 
 Its core value is not just recommending an action. It also shows what evidence was checked, what was not checked, and when the recommendation may be incomplete, so a non-expert operator can make a safer decision.
 
@@ -8,7 +12,7 @@ Its core value is not just recommending an action. It also shows what evidence w
 
 Most security copilots focus on giving a better answer.
 
-This project focuses on making incomplete reasoning visible.
+Sentinel focuses on making incomplete reasoning visible.
 
 For each incident, the system:
 - summarizes what happened in plain language
