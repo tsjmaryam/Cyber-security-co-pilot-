@@ -5,10 +5,10 @@
 Build a non-expert operator interface for Cyber-security-co-pilot that makes the system's recommendation useful and its blind spots obvious.
 
 This document is derived from:
-- [`Purpose_doc.md`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/Purpose_doc.md)
+- [`Sentinel_Value_Proposition.md`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/Sentinel_Value_Proposition.md)
 - the current backend APIs in [`backend/api/incidents.py`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/backend/api/incidents.py)
 - the operator action APIs in [`backend/api/operator_actions.py`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/backend/api/operator_actions.py)
-- the current Streamlit prototype in [`sentinel_app.py`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/sentinel_app.py)
+- the legacy prototype flow that this frontend replaced
 
 ## Product Goal
 
@@ -292,7 +292,7 @@ The frontend is acceptable when:
 
 ## Current Prototype Gaps
 
-Compared to these requirements, the current [`sentinel_app.py`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/sentinel_app.py):
+Compared to the legacy prototype this frontend replaced:
 
 - does not render alternatives as first-class choices with tradeoffs
 - silently chooses the first alternative

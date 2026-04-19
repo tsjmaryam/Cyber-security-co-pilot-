@@ -52,6 +52,21 @@ Example:
 
 That is the value: not just a recommendation, but visible uncertainty and visible blind spots.
 
+## Demo Talking Points
+
+Use this framing in a live demo:
+
+1. A threat hits and Sentinel alerts the operator.
+2. The operator is not expected to be a security expert.
+3. Sentinel explains the issue in plain language.
+4. Sentinel shows the recommended action and alternatives.
+5. Sentinel makes missing evidence impossible to miss.
+6. The operator chooses a response and Sentinel generates the report automatically.
+7. If the incident is severe, the expert view exposes the raw logs, model evidence, and full audit trail.
+
+The message for a judge is simple:
+Sentinel is not just finding threats. It is helping the right person make the right decision quickly, even under incomplete information.
+
 ## Architecture At A Glance
 
 The repo has five major parts:
@@ -210,7 +225,7 @@ Python coverage is enforced in CI.
 
 ## If You Only Read One More Document
 
-Read [`Purpose_doc.md`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/Purpose_doc.md).
+Read [`Sentinel_Value_Proposition.md`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/Sentinel_Value_Proposition.md).
 
 That document states the product thesis most directly:
 this system helps a human notice when the machine may be missing something.
