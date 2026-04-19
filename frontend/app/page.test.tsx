@@ -302,4 +302,43 @@ describe("Home page view switching", () => {
       expect(screen.getByText(/reset the credentials first/i)).toBeInTheDocument();
     });
   });
+
+  it("keeps approval blocked without rationale", async () => {
+    await renderLoadedHome();
+
+    const approveButton = screen.getByRole("button", { name: /approve recommendation/i });
+
+    expect(approveButton).toBeDisabled();
+    expect(screen.getByPlaceholderText(/record the human reasoning in plain language/i)).toBeInTheDocument();
+
+    fireEvent.click(approveButton);
+
+    expect(api.postApprove).not.toHaveBeenCalled();
+  });
+
+  it("shows a report error when latest report loading fails", async () => {
+    vi.mocked(api.getLatestReport).mockRejectedValue(new api.ApiError("Report not found", 404));
+
+    await renderLoadedHome();
+
+    fireEvent.click(screen.getByRole("button", { name: /view latest report/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/report generation failed/i)).toBeInTheDocument();
+      expect(screen.getByText(/report not found/i)).toBeInTheDocument();
+    });
+  });
+
+  it("shows an agent error when the agent query fails", async () => {
+    vi.mocked(api.postAgentQuery).mockRejectedValue(new api.ApiError("Agent unavailable", 503));
+
+    await renderLoadedHome();
+
+    fireEvent.click(screen.getByRole("button", { name: /^expert$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^ask$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/agent unavailable/i)).toBeInTheDocument();
+    });
+  });
 });

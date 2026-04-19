@@ -91,3 +91,66 @@ def test_live_backend_and_agent_routes_against_seeded_demo_db(monkeypatch):
     assert result["raw_response"]["mock_mode"] is True
     assert "Reset credentials" in result["answer"]
     assert result["context_summary"]["has_incident"] is True
+
+
+@pytest.mark.skipif(TestClient is None, reason="fastapi test client unavailable")
+def test_live_operator_actions_and_report_flow_against_seeded_demo_db(monkeypatch):
+    dsn = _resolve_dsn()
+    if not dsn:
+        pytest.skip("No POSTGRES_DSN or DATABASE_URL available for live integration test.")
+
+    monkeypatch.setenv("POSTGRES_DSN", dsn)
+    monkeypatch.setenv("DATABASE_URL", dsn)
+    monkeypatch.setenv("AGENT_AUTH_MODE", "mock")
+    monkeypatch.setenv("AGENT_USE_MCP_CYBER_CONTEXT", "0")
+
+    with psycopg.connect(dsn) as conn:
+        with conn.cursor() as cur:
+            cur.execute(APP_SCHEMA_PATH.read_text(encoding="utf-8"))
+            for table in ("incident_reports", "decision_review_events", "operator_decisions"):
+                cur.execute(f"DELETE FROM {table} WHERE incident_id = %s", (DEMO_INCIDENT_ID,))
+        conn.commit()
+
+    seed_demo_db.main()
+    backend_dependencies.get_connection_factory.cache_clear()
+    backend_client = TestClient(backend_app)
+
+    alternative_response = backend_client.post(
+        f"/incidents/{DEMO_INCIDENT_ID}/alternative",
+        json={
+            "action_id": "collect_more_evidence",
+            "rationale": "The missing network evidence should be reviewed first.",
+        },
+    )
+    assert alternative_response.status_code == 200
+    alt_payload = alternative_response.json()["result"]
+    assert alt_payload["decision_type"] == "choose_alternative"
+    assert alt_payload["chosen_action"]["action_id"] == "collect_more_evidence"
+
+    approve_response = backend_client.post(
+        f"/incidents/{DEMO_INCIDENT_ID}/approve",
+        json={
+            "rationale": "Reset credentials now to contain access while the remaining evidence is reviewed.",
+        },
+    )
+    assert approve_response.status_code == 200
+    approve_payload = approve_response.json()["result"]
+    assert approve_payload["decision_type"] == "approve_recommendation"
+    assert approve_payload["report"]["incident_id"] == DEMO_INCIDENT_ID
+
+    report_response = backend_client.get(f"/incidents/{DEMO_INCIDENT_ID}/report/latest")
+    assert report_response.status_code == 200
+    report_payload = report_response.json()["report"]
+    assert report_payload["approved_action"]["label"] == "Reset credentials"
+    assert "contain access" in report_payload["operator_rationale"].lower()
+
+    history_response = backend_client.get(f"/incidents/{DEMO_INCIDENT_ID}/operator-history")
+    assert history_response.status_code == 200
+    history_payload = history_response.json()
+    assert history_payload["latest_decision"]["decision_type"] == "approve_recommendation"
+    assert any(item["decision_type"] == "choose_alternative" for item in history_payload["recent_decisions"])
+
+    pdf_response = backend_client.get(f"/incidents/{DEMO_INCIDENT_ID}/report/latest/pdf")
+    assert pdf_response.status_code == 200
+    assert pdf_response.headers["content-type"] == "application/pdf"
+    assert pdf_response.content.startswith(b"%PDF")

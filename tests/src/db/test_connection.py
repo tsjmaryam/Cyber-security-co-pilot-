@@ -58,5 +58,4 @@ def test_create_connection_uses_dsn_or_keyword_args(monkeypatch):
 
 
 def test_schema_path_points_to_repo_schema():
-    assert str(schema_path()).endswith("src\\db\\schema.sql")
-
+    assert schema_path().parts[-3:] == ("src", "db", "schema.sql")
