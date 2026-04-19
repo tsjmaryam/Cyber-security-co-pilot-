@@ -1,224 +1,220 @@
+# Cyber Security Co-Pilot
 
-<p align="center">
-  © 2025 Jonathan Duron, Eli Talbert, Anthony Cordetti, Maryam Shahbaz Ali
-  <br>
-  Released under the MIT License.
-</p>
+Cyber Security Co-Pilot is a human-in-the-loop incident response system for cloud security.
 
----
+Its core value is not just recommending an action. It also shows what evidence was checked, what was not checked, and when the recommendation may be incomplete, so a non-expert operator can make a safer decision.
 
-# Cyber Security Co-Pilot - From Logs to Decisions: Interpretable AI for Security Operations
+## What Makes This Different
 
-Cyber Security Co-Pilot is an interpretable incident-analysis system designed to transform raw AWS CloudTrail logs into structured incidents, explainable risk signals, and actionable decision support. The system combines a deterministic data pipeline, weak supervision, baseline modeling, and a FraudLens-style explanation layer to convert complex event streams into clear, human-readable security insights. It is built for transparency, auditability, and effective analyst workflows in modern cloud security operations.
+Most security copilots focus on giving a better answer.
 
----
+This project focuses on making incomplete reasoning visible.
 
-## Key features
+For each incident, the system:
+- summarizes what happened in plain language
+- recommends an action
+- shows 2-3 alternatives with tradeoffs
+- exposes blind spots such as evidence that was not checked or could not be checked
+- lets a human approve, choose an alternative, ask for more analysis, or escalate
+- records the decision and generates an audit report
 
-* **End-to-end CloudTrail pipeline** – ingests raw logs (including archives), normalizes them into a canonical schema, derives features, and groups events into time-bounded incidents while preserving provenance and context.
-* **Weak supervision and baseline modeling** – generates rule-based suspiciousness labels and trains a baseline incident scoring model to prioritize and triage potential threats.
-* **FraudLens-style explainability adapter** – translates model outputs into interpretable, feature-level explanations that highlight why an incident is considered risky.
-* **Decision-support engine** – produces structured, non-expert-facing recommendations, alternative actions, and escalation paths based on incident context and policy rules.
-* **Model-agnostic agent (ReAct-based)** – enables grounded querying of incidents using OpenAI-compatible APIs, with tool-based reasoning over incident context, evidence, and decision-support outputs.
-* **Backend and UI integration** – includes a FastAPI backend, Streamlit Sentinel UI, and optional MCP-based cyber knowledge integration for extended context retrieval.
+That blind-spot visibility is the main product differentiator.
 
----
+## What A Judge Should Understand Quickly
 
-## Repository layout
+This is a decision-support product for security operations, not just a detection model and not just a chatbot.
 
-```Cyber-security-co-pilot/
-│
-├── src/                                # Core pipeline and logic
-│   ├── ingest.py
-│   ├── normalize.py
-│   ├── derive_features.py
-│   ├── build_incidents.py
-│   ├── weak_label.py
-│   ├── train_model.py
-│   ├── cyber_fraudlens_adapter.py
-│   ├── decision_support_bridge.py
-│   ├── demo_stream.py
-│   ├── demo_runner.py
-│   ├── validate.py
-│   ├── export.py
-│   │
-│   ├── services/                       # Application services
-│   ├── repositories/                   # Postgres data layer
-│   ├── db/                             # Schema and DB utilities
-│   └── agent/                          # ReAct agent module
-│
-├── backend/                            # FastAPI backend
-├── frontend/                           # Frontend components
-├── agent_backend/                      # Agent service wrapper
-├── decision_support/                   # Decision engine package
-├── mcp_server/                         # Optional knowledge server
-├── configs/                            # Pipeline and policy configs
-├── scripts/                            # Local startup scripts
-├── data/                               # Input and processed data
-├── reports/                            # Reports and outputs
-├── artifacts/                          # Trained models
-├── .doc/                               # Knowledge base (features + patterns)
-├── tests/                              # Unit and integration tests
-├── notebooks/                          # Exploration notebooks
-├── sentinel_app.py                     # Streamlit UI
-├── requirements.txt                    # Dependencies
-├── README.md                           # Main README
-└── LICENSE                             # MIT License
+The main workflow is:
+1. ingest cloud activity
+2. form an incident
+3. generate a recommended action and alternatives
+4. show checked vs not checked evidence
+5. let a human choose
+6. log the decision trace and generate a report
+
+The project is successful when a non-expert can answer four questions from the UI:
+1. What happened?
+2. What should I do?
+3. What else could I do?
+4. Did we check everything?
+
+## Demo Story
+
+The strongest demo path is an incomplete incident.
+
+Example:
+1. the system sees suspicious login and follow-on activity
+2. it recommends resetting credentials
+3. it clearly shows that a key branch such as network evidence was not checked
+4. it warns that the recommendation may be incomplete
+5. the operator uses the double-check flow or chooses a safer alternative
+6. the system logs that decision and produces a report
+
+That is the value: not just a recommendation, but visible uncertainty and visible blind spots.
+
+## Architecture At A Glance
+
+The repo has five major parts:
+
+- [`src`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/src): ingestion, normalization, feature derivation, incident building, training, demo generation, services, repositories, and agent logic
+- [`backend`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/backend): FastAPI core API for incidents, decision support, coverage review, operator actions, and reports
+- [`frontend`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/frontend): Next.js operator interface with simple and expert views
+- [`agent_backend`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/agent_backend): separate agent service for grounded incident Q&A
+- [`decision_support`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/decision_support): decision-engine package
+
+Supporting folders:
+- [`configs`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/configs): pipeline and policy configuration
+- [`scripts`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/scripts): local startup utilities
+- [`tests`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/tests): unit and integration tests
+- [`data`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/data): raw, processed, and demo data
+
+### Short Architecture Diagram
+
+```mermaid
+flowchart LR
+    A[CloudTrail logs and demo data] --> B[src pipeline]
+    B --> C[Incidents and evidence]
+    B --> D[Scored detector results]
+    C --> E[Decision support and coverage review]
+    D --> E
+    E --> F[FastAPI backend]
+    F --> G[Next.js operator UI]
+    C --> H[Agent service]
+    D --> H
+    E --> H
+    H --> G
+    G --> I[Human decision, audit trail, and report]
 ```
 
----
+## Key Features
 
-## Getting started
+- End-to-end CloudTrail pipeline from raw logs to incidents
+- Incident scoring with explainable model outputs
+- Coverage and blind-spot tracking by evidence category
+- Decision-support engine with recommendations and alternatives
+- Human decision audit trail and incident report generation
+- Grounded incident agent using OpenAI-compatible APIs
+- Operator UI with simple and expert workflows
+
+## Fastest Way To Run The Demo
 
 ### Prerequisites
 
-* Python 3.10+
-* Optional: PostgreSQL database for full system functionality
-* Optional: OpenAI-compatible API endpoint
-* Optional: Node.js (for MCP server integration)
+- Python 3.10+
+- PostgreSQL
+- Node.js
+- optional OpenAI-compatible API key for live agent mode
 
----
-
-### Installation
-
-1. Create and activate a virtual environment (optional but recommended).
-2. Install dependencies:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
----
-
-### Running the pipeline
-
-From the project root:
+### Install
 
 ```bash
-python -m src.main --project-root .
+pip install -r requirements.txt
 ```
 
-Enable debug logging:
+For the frontend:
 
 ```bash
-LOG_LEVEL=DEBUG python -m src.main --project-root .
+cd frontend
+npm install
 ```
 
----
+### Start The Local Stack
 
-### Demo scenarios
-
-Generate synthetic CloudTrail scenarios:
-
-```bash
-python -m src.demo_stream --output-dir data/demo_stream --batch-size 1
-```
-
-Run the full pipeline on demo data:
-
-```bash
-python -m src.demo_runner --project-root . --output-dir data/demo_run --batch-size 1
-```
-
----
-
-### Model training
-
-```bash
-python -m src.train_model --project-root .
-```
-
----
-
-### Explainability (FraudLens adapter)
-
-Single incident:
-
-```bash
-python -m src.cyber_fraudlens_adapter --project-root . --incident-id incident_000000001
-```
-
-Batch scoring:
-
-```bash
-python -m src.cyber_fraudlens_adapter --project-root . --output data/processed/incidents_adapter_scored.parquet
-```
-
----
-
-### Decision support
-
-```bash
-python -c "from src.decision_support_bridge import generate_decision_support_for_incident; import json; print(json.dumps(generate_decision_support_for_incident('incident_000000001', project_root='.'), indent=2))"
-```
-
----
-
-### Backend services
-
-Run FastAPI backend:
-
-```bash
-uvicorn backend.main:app --reload
-```
-
-Start locally (Windows):
+From the project root on Windows:
 
 ```powershell
 .\scripts\start_local.ps1
 ```
 
-Start with MCP server:
+This starts the local backend services for the operator workflow.
 
-```powershell
-.\scripts\start_local.ps1 -IncludeMcpServer
-```
-
-Stop services:
+If you need to stop them:
 
 ```powershell
 .\scripts\stop_local.ps1
 ```
 
----
-
-### Agent usage
+### Launch The Frontend
 
 ```bash
-python -c "from src.services.agent_app_service import query_incident_agent; import json; print(json.dumps(query_incident_agent('incident_000000001', 'What should I do next?', env={'POSTGRES_DSN':'postgresql://user:pass@localhost:5432/cyber','OPENAI_MODEL':'gpt-5.4','OPENAI_API_KEY':'your_key'}), indent=2))"
+cd frontend
+npm run dev
 ```
 
-The agent:
+Open:
 
-* loads incident context, evidence, and detector outputs from Postgres
-* selects grounded tools for reasoning
-* generates decision support when needed
-* enforces bounded reasoning for auditability
+- UI: `http://127.0.0.1:3000`
 
----
+## What To Click In The UI
 
-## Outputs
+Recommended judge flow:
 
-* Processed events and incident datasets
-* Labeled and scored incident data
-* Model evaluation reports
-* Decision-support outputs
-* Knowledge base artifacts
+1. open an incident from the left-hand queue
+2. stay in `Simple` view first
+3. read:
+   - `What happened?`
+   - `What should I do?`
+   - `What else could I do?`
+   - `Did we check everything?`
+4. notice the `recommendation may be incomplete` warning on incomplete cases
+5. use:
+   - `Double check`
+   - `Choose selected alternative`
+   - `Approve recommendation`
+6. open `View latest report`
+7. switch to `Expert` view to inspect:
+   - model evidence
+   - raw logs
+   - cyber data used for the decision
+   - agent panel
 
----
+## Main API Surface
 
-## Configuration
+Core incident workflow:
+- `GET /incidents`
+- `GET /incidents/{incident_id}`
+- `GET /incidents/{incident_id}/decision-support`
+- `GET /incidents/{incident_id}/coverage-review`
+- `POST /incidents/{incident_id}/approve`
+- `POST /incidents/{incident_id}/alternative`
+- `POST /incidents/{incident_id}/escalate`
+- `POST /incidents/{incident_id}/double-check`
+- `GET /incidents/{incident_id}/operator-history`
+- `GET /incidents/{incident_id}/report/latest`
+- `GET /incidents/{incident_id}/report/latest/pdf`
 
-* `configs/pipeline_config.yaml`
-* `configs/event_flag_rules.yaml`
-* `configs/decision_policy.yaml`
+Agent workflow:
+- `GET /incidents/{incident_id}/agent-auth`
+- `POST /incidents/{incident_id}/agent-query`
 
----
+## Model And Explanation Notes
 
-## Acknowledgments
+The current scoring pipeline supports an explainable model path with a logistic fallback.
 
-This project was developed to advance interpretable AI in cybersecurity, focusing on transparency, auditability, and human-centered decision-making in security operations.
+The system can carry:
+- `model_type`
+- explanation text
+- feature contributions
 
----
+Those explanations are surfaced in the expert workflow alongside human-readable signal summaries.
+
+## Testing Status
+
+The repo includes:
+- Python unit and integration tests
+- frontend component and page behavior tests
+- proxy route tests for Next API forwarding
+- live integration coverage for operator actions and report generation
+
+Python coverage is enforced in CI.
+
+## If You Only Read One More Document
+
+Read [`Purpose_doc.md`](C:/Users/ejtal/Downloads/judgment_drift/Cyber-security-co-pilot/Purpose_doc.md).
+
+That document states the product thesis most directly:
+this system helps a human notice when the machine may be missing something.
 
 ## License
+
+MIT
