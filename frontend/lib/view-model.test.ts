@@ -117,7 +117,7 @@ describe("view-model helpers", () => {
     expect(model.recommendedAction.label).toBe("Reset credentials");
     expect(model.incidentLabel).toBe("incident_1");
     expect(model.incidentWindow).toContain("Apr");
-    expect(model.timelineSubject).toBe("demo-user@example.com");
+    expect(model.timelineSubject).toBe("issue incident_1");
     expect(model.plainLanguageWhatHappened).toContain("Sentinel found suspicious activity affecting 203.0.113.10");
     expect(model.timeline[0].title).toBe("Signed in to the AWS console");
     expect(model.timeline[1].title).toBe("Looked up existing virtual machines");
