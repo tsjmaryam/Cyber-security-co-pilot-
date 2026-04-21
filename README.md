@@ -2,6 +2,13 @@
   <img src="frontend/public/logo.png" alt="Sentinel logo" width="160" />
 </p>
 
+<p align="center">
+  © 2025 Jonathan Duron, Eli Talbert, Anthony Cordetti, Maryam Shahbaz Ali
+  <br>
+  Released under the MIT License.
+</p>
+
+
 # Sentinel: Cyber Security Co-Pilot
 
 Sentinel is a human-in-the-loop incident response system for cloud security.
